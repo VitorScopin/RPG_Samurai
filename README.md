@@ -1,6 +1,6 @@
 # KAGE NO MICHI — O Caminho das Sombras
 
-RPG de ação **3D em terceira pessoa**, ambientado num Japão feudal fantástico. Protótipo jogável criado com **Three.js** e **Vite**, sem download de modelos, texturas ou serviços externos.
+RPG de ação **3D em terceira pessoa**, ambientado num Japão feudal fantástico. Protótipo jogável criado com **Three.js** e **Vite**, com personagens animados em FBX, texturas PBR e recursos 3D baixados automaticamente na primeira execução.
 
 ## Jogar localmente
 
