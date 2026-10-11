@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createActor, animateActor } from './actor.js';
+import { installRealisticSamurai } from './realisticSamurai.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -67,10 +68,19 @@ const boss={actor:bossActor,spawn:{...world.boss},health:230,maxHealth:230,dead:
   cooldown:1.8,attackTime:0,stun:0,velocity:0,walk:0,home:{...world.boss},isBoss:true};
 const enemies=[...bandits,boss];
 boss.actor.model.visible=false;
+// Load the skinned, textured samurai and authored FBX motions, while retaining
+// the procedural meshes as an immediate, offline-safe fallback.
+installRealisticSamurai([
+  {actor:hero,role:'hero'},
+  {actor:mentor,role:'mentor'},
+  ...bandits.map(e=>({actor:e.actor,role:'bandit'}))
+]).then(count=>{
+  if(count&&state.started)toast('PERSONAGENS 3D DETALHADOS CARREGADOS','gold');
+}).catch(error=>console.warn('Samurai detalhado não carregou; usando modelos anteriores.',error));
 const state={
   started:false,paused:true,dead:false,dialogue:false,sound:true,
   level:1,xp:0,health:100,stamina:100,coins:0,potions:3,
-  quest:0,kills:0,attackCooldown:0,attackAnim:0,
+  quest:0,kills:0,attackCooldown:0,attackAnim:0,attackHitPending:false,attackHitDelay:0,
   dodgeCooldown:0,dodgeTime:0,invulnerable:0,blockTime:99,healCooldown:0,
   run:false,blocking:false,time:0,uiClock:0,saveClock:0,
   yaw:0,pitch:.26,zoom:10,locked:false,lastMove:0,screenShake:0
@@ -215,9 +225,15 @@ function damageEnemy(enemy,damage){
 function attack(){
   if(!state.started||state.paused||state.dialogue||state.dead||state.attackCooldown>0||state.dodgeTime>0)return;
   if(state.stamina<16){toast('Vigor insuficiente. Aguarde a recuperação.');return;}
-  state.stamina-=16;state.attackCooldown=.48;state.attackAnim=.30;
+  state.stamina-=16;
+  state.attackCooldown=hero.rigged?.82:.48;
+  state.attackAnim=hero.rigged?.72:.30;
+  state.attackHitDelay=hero.rigged?.24:.12;
+  state.attackHitPending=true;
   state.blocking=false;state.locked=false;
   makeSound(630,.13,'sawtooth',.022);
+}
+function performHit(){
   const p=hero.model.position;
   effects(p.x-Math.sin(hero.model.rotation.y)*1.45,p.z-Math.cos(hero.model.rotation.y)*1.45,0xe6efff,1);
   const facing=new THREE.Vector2(-Math.sin(hero.model.rotation.y),-Math.cos(hero.model.rotation.y));
@@ -296,7 +312,7 @@ function applySavedData(data) {
 function initFresh(){
   try{localStorage.removeItem(SAVE_KEY);}catch{}
   hero.model.position.set(0,0,13);hero.model.rotation.y=0;
-  Object.assign(state,{level:1,xp:0,health:100,stamina:100,coins:0,potions:3,quest:0,kills:0,dead:false,attackCooldown:0,attackAnim:0,invulnerable:0});
+  Object.assign(state,{level:1,xp:0,health:100,stamina:100,coins:0,potions:3,quest:0,kills:0,dead:false,attackCooldown:0,attackAnim:0,attackHitPending:false,attackHitDelay:0,invulnerable:0});
   resetEnemies();
   updateQuest();
 }
@@ -455,7 +471,7 @@ function updateMovement(dt){
   }
   if(running&&state.dodgeTime<=0)state.stamina=Math.max(0,state.stamina-dt*13);
   else if(!state.blocking)state.stamina=Math.min(100,state.stamina+dt*22);
-  const action=state.attackAnim>0?'attack':state.blocking?'block':'idle';
+  const action=state.dodgeTime>0?'dodge':state.attackAnim>0?'attack':state.blocking?'block':'idle';
   animateActor(hero,dt,state.lastMove,action,state.invulnerable>.3);
 }
 function updateEnemy(e,dt) {
@@ -503,6 +519,10 @@ function tick(){
     state.time+=dt;state.uiClock+=dt;state.saveClock+=dt;
     state.attackCooldown=Math.max(0,state.attackCooldown-dt);
     state.attackAnim=Math.max(0,state.attackAnim-dt);
+    if(state.attackHitPending){
+      state.attackHitDelay-=dt;
+      if(state.attackHitDelay<=0){state.attackHitPending=false;performHit();}
+    }
     state.dodgeTime=Math.max(0,state.dodgeTime-dt);
     state.dodgeCooldown=Math.max(0,state.dodgeCooldown-dt);
     state.invulnerable=Math.max(0,state.invulnerable-dt);
