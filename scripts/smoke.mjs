@@ -26,6 +26,7 @@ try{
   );
   const status=await page.evaluate(()=>document.body.dataset.samuraiVisual);
   console.log('Character status:',status);
+  console.log('Character exception:',await page.evaluate(()=>document.body.dataset.characterError||'none'));
   assert.equal(status,'ready','Realistic model and animations should load');
   await page.locator('#start-button').click();
   assert(await page.locator('#creator').isVisible(),'First launch must open the creator');
