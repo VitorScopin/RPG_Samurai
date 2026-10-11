@@ -270,7 +270,7 @@ function makeRig(asset,actor,{role='hero'}={}){
       if(currentStrike&&currentStrike!==action)currentStrike.stop();
       action.reset();
       action.setEffectiveTimeScale(action.getClip().duration/(overlayName==='attack'?.70:overlayName==='heavy'?.97:overlayName==='dodge'?.36:1.2));
-      action.setLoop(['attack','dodge'].includes(overlayName)?THREE.LoopOnce:THREE.LoopRepeat,Infinity);
+      action.setLoop(['attack','heavy','dodge'].includes(overlayName)?THREE.LoopOnce:THREE.LoopRepeat,Infinity);
       action.play();currentStrike=action;
     }
     if(overlayName&&currentStrike?.getClip().name===overlayName)overlayWeight=interp(overlayWeight,1,dt,18);
