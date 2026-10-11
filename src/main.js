@@ -453,35 +453,84 @@ function updateHUD(){
   }
   mapDraw();
 }
-function updateMovement(dt){
-  const left=keys.has('KeyA')||keys.has('ArrowLeft'),right=keys.has('KeyD')||keys.has('ArrowRight');
-  const forward=keys.has('KeyW')||keys.has('ArrowUp'),back=keys.has('KeyS')||keys.has('ArrowDown');
-  let mx=(right?1:0)-(left?1:0),mz=(forward?1:0)-(back?1:0);
-  const mag=Math.hypot(mx,mz);if(mag){mx/=mag;mz/=mag;}
-  const dx=mx*Math.cos(state.yaw)-mz*Math.sin(state.y);
-  const dz=-mx*Math.sin(state.yaw)-mz*Math.cos(state.yaw);
-  state.run=keys.has('ShiftLeft')||keys.has('ShiftRight');
-  const running=state.run&&state.stamina>5&&mag>0;
-  const speed=state.dodgeTime>0?13:running?7.3:4.3;
-  if(mag>0){
-    const yaw=Math.atan2(-dx,-dz);
-    const diff=Math.atan2(Math.sin(yaw-hero.model.rotation.y),Math.cos(yaw-hero.model.rotation.y));
-    hero.model.rotation.y+=diff*Math.min(dt*13,1);
-    state.lastMove=speed;
-  } else state.lastMove=approach(state.lastMove,0,dt*14);
-  const moveScale=state.dodgeTime>0?1.55:1;
-  if((mag||state.dodgeTime>0)&&!state.dialogue) {
-    let vx=dx,vz=dz;
-    if(state.dodgeTime>0&&!mag){vx=-Math.sin(hero.model.rotation.y);vz=-Math.cos(hero.model.rotation.y);}
-    const p=hero.model.position,delta=dt*speed*moveScale;
-    if(!world.collides(p.x+vx*delta,p.z))p.x+=vx*delta;
-    if(!world.collides(p.x,p.z+vz*delta))p.z+=vz*delta;
+// World position and heading must remain finite: Three.js renders only the
+// gray fog/background when the camera receives a NaN coordinate.
+const safePose={x:0,z:13,heading:0};
+function recoverPose(){
+  const p=hero.model.position;
+  if(!Number.isFinite(p.x)||!Number.isFinite(p.z)){
+    p.set(safePose.x,0,safePose.z);
+    console.warn('Recovered non-finite player position.');
   }
-  if(running&&state.dodgeTime<=0)state.stamina=Math.max(0,state.stamina-dt*13);
+  if(!Number.isFinite(hero.model.rotation.y)){
+    hero.model.rotation.y=safePose.heading;
+    console.warn('Recovered non-finite player rotation.');
+  }
+}
+function updateMovement(dt){
+  recoverPose();
+  const p=hero.model.position;
+  const left=keys.has('KeyA')||keys.has('ArrowLeft');
+  const right=keys.has('KeyD')||keys.has('ArrowRight');
+  const forward=keys.has('KeyW')||keys.has('ArrowUp');
+  const back=keys.has('KeyS')||keys.has('ArrowDown');
+  const ix=Number(right)-Number(left);
+  const iz=Number(forward)-Number(back);
+  // Read both axes before normalizing. Opposite input cancels cleanly;
+  // do not divide by zero or let one axis become undefined.
+  const magnitude=Math.hypot(ix,iz);
+  const invMagnitude=magnitude>0?1/magnitude:0;
+  const yaw=Number.isFinite(state.yaw)?state.yaw:0;
+  if(!Number.isFinite(state.yaw))state.yaw=0;
+  const forwardX=-Math.sin(yaw),forwardZ=-Math.cos(yaw);
+  const rightX=Math.cos(yaw),rightZ=-Math.sin(yaw);
+  const dx=(rightX*ix+forwardX*iz)*invMagnitude;
+  const dz=(rightZ*ix+forwardZ*iz)*invMagnitude;
+
+  state.run=keys.has('ShiftLeft')||keys.has('ShiftRight');
+  const running=state.run&&state.stamina>5&&magnitude>0;
+  const dodging=state.dodgeTime>0;
+  const speed=dodging?13:running?7.3:4.3;
+
+  if(magnitude>0&&Number.isFinite(dx)&&Number.isFinite(dz)){
+    const targetHeading=Math.atan2(-dx,-dz);
+    const heading=Number.isFinite(hero.model.rotation.y)?hero.model.rotation.y:safePose.heading;
+    const deltaYaw=Math.atan2(Math.sin(targetHeading-heading),Math.cos(targetHeading-heading));
+    const nextHeading=heading+deltaYaw*Math.min(dt*13,1);
+    if(Number.isFinite(nextHeading)){
+      // Use the Euler setter instead of accumulating onto a corrupted angle.
+      hero.model.rotation.y=nextHeading;
+      safePose.heading=nextHeading;
+    }
+    state.lastMove=speed;
+  }else{
+    state.lastMove=approach(state.lastMove,0,dt*14);
+  }
+
+  if(magnitude>0||dodging){
+    let vx=dx,vz=dz;
+    if(dodging&&magnitude===0){
+      vx=-Math.sin(safePose.heading);
+      vz=-Math.cos(safePose.heading);
+    }
+    const step=dt*speed*(dodging?1.55:1);
+    if(Number.isFinite(step)&&Number.isFinite(vx)&&Number.isFinite(vz)){
+      const nextX=p.x+vx*step, nextZ=p.z+vz*step;
+      // Resolve axes separately so characters slide along walls without
+      // entering a house, and never accept a non-finite position.
+      if(Number.isFinite(nextX)&&!world.collides(nextX,p.z))p.x=nextX;
+      if(Number.isFinite(nextZ)&&!world.collides(p.x,nextZ))p.z=nextZ;
+    }
+  }
+  recoverPose();
+  safePose.x=p.x;safePose.z=p.z;
+
+  if(running&&!dodging)state.stamina=Math.max(0,state.stamina-dt*13);
   else if(!state.blocking)state.stamina=Math.min(100,state.stamina+dt*22);
-  const action=state.dodgeTime>0?'dodge':state.attackAnim>0?'attack':state.blocking?'block':'idle';
+  const action=dodging?'dodge':state.attackAnim>0?'attack':state.blocking?'block':'idle';
   animateActor(hero,dt,state.lastMove,action,state.invulnerable>.3);
 }
+
 function updateEnemy(e,dt) {
   if(e.dead||!e.actor.model.visible)return;
   const p=e.actor.model.position,pp=hero.model.position;
