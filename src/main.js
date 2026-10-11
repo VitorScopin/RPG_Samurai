@@ -144,6 +144,11 @@ function updateQuest(){
   save();
 }
 function advanceQuest(next){
+  // Pre-quest victories must never soft-lock the first mission.
+  if(next===1){
+    state.kills=bandits.filter(e=>e.dead).length;
+    if(state.kills>=3)next=2;
+  }
   state.quest=next;
   updateQuest();makeSound(660,.34,'sine',.07);
   toast(next===5?'CAPÍTULO I CONCLUÍDO — HONRA RESTAURADA':'NOVA ETAPA DA MISSÃO','gold');
@@ -278,7 +283,7 @@ function applySavedData(data) {
   state.xp=clamp(Number(data.xp)||0,0,expForLevel());
   state.health=clamp(Number(data.health)||100,1,maxHealth());
   state.coins=Math.max(0,Number(data.coins)||0);
-  state.potions=Math.max(0,Number(data.potions)??3);
+  state.potions=Math.max(0,Number.isFinite(Number(data.potions))?Number(data.potions):3);
   state.quest=clamp(Number(data.quest)||0,0,5);
   state.kills=clamp(Number(data.kills)||0,0,3);
   const x=Number(data.x),z=Number(data.z);
@@ -337,7 +342,7 @@ window.addEventListener('keydown',event=>{
   if(event.code==='KeyE')interact();
   if(event.code==='KeyF')heal();
   if(event.code==='KeyR'){state.locked=!state.locked;toast(state.locked?'ALVO TRAVADO':'ALVO LIBERADO');}
-  if(event.code==='KeyQ'){state.blockTime=0;state.blocking=true;}
+  if(event.code==='KeyQ'&&!state.blocking){state.blockTime=0;state.blocking=true;}
 });
 window.addEventListener('keyup',event=>{keys.delete(event.code);if(event.code==='KeyQ')state.blocking=false;});
 window.addEventListener('blur',()=>{keys.clear();state.blocking=false;if(state.started&&!state.paused&&!state.dialogue)pauseGame();});
@@ -473,7 +478,7 @@ function updateEnemy(e,dt) {
     if(distance<4.1) {
       // Telegraph provides a reaction window before damage resolves.
       setTimeout(()=>{
-        if(!state.dead&&!state.paused&&!e.dead&&e.actor.model.visible&&dist(e.actor.model.position,hero.model.position)<(e.isBoss?4.05:2.8)&&e.stun===0){
+        if(!state.dead&&!state.paused&&!state.dialogue&&!e.dead&&e.actor.model.visible&&dist(e.actor.model.position,hero.model.position)<(e.isBoss?4.05:2.8)&&e.stun===0){
           damageHero(e.isBoss?34:17,e);
         }
       },430);
