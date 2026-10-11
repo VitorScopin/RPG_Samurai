@@ -53,6 +53,16 @@ try{
     },image);
     const debug=await page.evaluate(()=>window.__kageDebug?.());
     console.log('DIAG '+label,JSON.stringify({pixels,debug}));
+    assert(debug,'Expected debug movement snapshot');
+    for(const [name,value] of Object.entries({
+      playerX:debug.hero.x,playerZ:debug.hero.z,heading:debug.hero.angle,
+      cameraX:debug.camera.x,cameraY:debug.camera.y,cameraZ:debug.camera.z,
+      cameraDistance:debug.cameraDistance
+    })){
+      assert(Number.isFinite(value),label+': '+name+' must be finite (got '+value+')');
+    }
+    assert(pixels.std>12,label+': viewport has collapsed into a flat gray image');
+    assert(pixels.skyFraction<90,label+': almost the entire view is gray fog/sky');
     return {pixels,debug};
   }
   await snapshot('starting');
