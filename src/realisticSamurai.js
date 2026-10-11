@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
+import { decorateEnemyRig, ENEMY_ARCHETYPES } from './enemyArchetypes.js';
 
 const DIRECTORY='/character/';
 const ANIMATION_PATHS={
@@ -196,7 +197,7 @@ function makeRig(asset,actor,{role='hero'}={}){
   fbx.scale.setScalar(.01);
   fbx.updateMatrixWorld(true);
   const bounds=new THREE.Box3().setFromObject(fbx);
-  const desired=role==='mentor'?2.65:role==='bandit'?2.42:TARGET_HEIGHT;
+  const desired=role==='mentor'?2.65:role==='shinobi'?2.37:role==='ashigaru'?2.55:role==='cursed'?2.92:role==='bandit'?2.42:TARGET_HEIGHT;
   const height=Math.max(.1,bounds.max.y-bounds.min.y);
   fbx.scale.multiplyScalar(desired/height);
   fbx.updateMatrixWorld(true);
@@ -218,7 +219,8 @@ function makeRig(asset,actor,{role='hero'}={}){
   // Avoid changing the cached skinned mesh's material between NPC variants.
   fbx.traverse(node=>{
     if(!node.isMesh&&!node.isSkinnedMesh)return;
-    const tint=role==='bandit'?new THREE.Color(0xd2a0a0):role==='mentor'?new THREE.Color(0xd0d4d4):new THREE.Color(0xffffff);
+    const colorTint={shinobi:0x7698a2,ashigaru:0xa9a183,cursed:0xab7775};
+    const tint=colorTint[role]?new THREE.Color(colorTint[role]):role==='bandit'?new THREE.Color(0xd2a0a0):role==='mentor'?new THREE.Color(0xd0d4d4):new THREE.Color(0xffffff);
     const recolor=material=>{
       const m=material.clone();
       m.color.multiply(tint);
@@ -228,6 +230,9 @@ function makeRig(asset,actor,{role='hero'}={}){
     node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;
   });
   mountSword(fbx,bones,fbx.scale.x);
+  // Three materially distinct enemy armor/weapon meshes follow the actual
+  // Mixamo bones; NPCs therefore animate instead of moving as static statues.
+  if(ENEMY_ARCHETYPES[role])decorateEnemyRig(fbx,bones,role);
   const mixer=new THREE.AnimationMixer(fbx);
   const actions={};
   for(const [name,clip] of Object.entries(asset.clips)){
@@ -248,10 +253,15 @@ function makeRig(asset,actor,{role='hero'}={}){
     const moving=clamp01(speed/4.3),running=clamp01((speed-4.3)/3);
     const goals={idle:1-moving,walk:moving*(1-running),run:moving*running};
     if(role==='mentor'){goals.idle=1;goals.walk=0;goals.run=0;}
-    if(role==='bandit')goals.run=0,goals.walk=clamp01(speed/2.4),goals.idle=1-goals.walk;
+    if(role==='bandit'||role==='ashigaru'||role==='cursed'){
+      goals.run=0;
+      goals.walk=clamp01(speed/(role==='ashigaru'?2.05:role==='cursed'?1.75:2.4));
+      goals.idle=1-goals.walk;
+    }
     for(const key of ['idle','walk','run'])weight[key]=interp(weight[key],goals[key],dt,10);
     let overlayName=null;
     if(pose==='attack')overlayName='attack';
+    if(pose==='heavy')overlayName='heavy';
     if(pose==='block')overlayName='block';
     if(pose==='dodge')overlayName='dodge';
     if(overlayName&&!actions[overlayName])overlayName=null;
@@ -259,7 +269,7 @@ function makeRig(asset,actor,{role='hero'}={}){
       const action=actions[overlayName];
       if(currentStrike&&currentStrike!==action)currentStrike.stop();
       action.reset();
-      action.setEffectiveTimeScale(action.getClip().duration/(overlayName==='attack'?.70:overlayName==='dodge'?.36:1.2));
+      action.setEffectiveTimeScale(action.getClip().duration/(overlayName==='attack'?.70:overlayName==='heavy'?.97:overlayName==='dodge'?.36:1.2));
       action.setLoop(['attack','dodge'].includes(overlayName)?THREE.LoopOnce:THREE.LoopRepeat,Infinity);
       action.play();currentStrike=action;
     }
