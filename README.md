@@ -31,10 +31,32 @@ Abra o endereço indicado pelo Vite (normalmente http://localhost:5173). Para ge
 
 Há controles táteis em telas menores.
 
+## Novo: samurai realista com animações de esqueleto
+
+A partir desta atualização o jogo carrega um **samurai texturizado (PBR) com
+esqueleto real** e utiliza animações FBX para parado, andando, correndo,
+atacando, defesa/crouch e esquiva. O samurai, o Mestre Hideo e os três bandidos
+compartilham a geometria e as texturas, com tonalidades diferentes para facilitar
+a identificação. O chefe Oni ainda é procedural.
+
+A primeira execução de `npm run dev` ou `npm run build` baixa automaticamente
+aproximadamente **48 MB** de recursos para `public/character/`. É preciso conexão
+com a internet na primeira vez; em execuções seguintes os arquivos já baixados
+são reutilizados. Se o download falhar, o jogo continua com o personagem geométrico
+anterior como fallback. Também é possível baixar manualmente via:
+
+```bash
+npm run assets
+```
+
+**Créditos e licenças obrigatórias:** veja [ASSET_CREDITS.md](ASSET_CREDITS.md).
+O modelo é do artista dark_igorek (licença CC BY 4.0) e as animações vêm
+do pacote Mixamo usado pelo template SamuraiThirdPersonTemplateThreeJS.
+
 ## Conteúdo do protótipo
 
 - Cenário procedural com vilarejo, torii, templos, bambus, cerejeiras, névoa, montanhas e iluminação atmosférica.
-- Samurai 3D articulado com espada e animações procedurais; câmera terceira pessoa.
+- Samurai rigado e texturizado com movimentos esqueléticos; fallback geométrico; câmera terceira pessoa.
 - Combate com acerto direcional, defesa, aparada, esquiva, estamina e inimigos com IA simples.
 - Missões guiadas pelo Mestre Hideo, três bandidos e confronto final com um Oni.
 - Experiência, evolução de nível, moedas, frascos de cura, HUD, minimapa, efeitos e sons sintetizados.
@@ -43,8 +65,10 @@ Há controles táteis em telas menores.
 ### Estrutura
 
 - `src/world.js`: ambiente 3D gerado em código.
-- `src/actor.js`: personagens e animações.
+- `src/actor.js`: modelos de fallback e animações procedurais.
+- `src/realisticSamurai.js`: carregamento e animações de personagens humanoides esqueléticos.
+- `scripts/sync-assets.mjs`: downloads verificáveis dos FBX/GLB com cache.
 - `src/main.js`: regras do jogo, missões, IA, controles e interface.
 - `src/style.css`: interface e apresentação.
 
-**Estado:** vertical slice / protótipo; modelos e animações são estilizados e gerados via geometria primitiva. Não é um jogo AAA completo, nem inclui rede/multiplayer.
+**Estado:** protótipo jogável. O herói e os NPCs principais usam um modelo humanoide mais detalhado com clipes de animação quando os recursos estão disponíveis; o cenário e o Oni ainda são procedurais. Ainda não é fotorrealista ou um jogo AAA, e não inclui rede/multiplayer.
