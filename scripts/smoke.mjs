@@ -28,6 +28,18 @@ try{
   console.log('Character status:',status);
   console.log('Character exception:',await page.evaluate(()=>document.body.dataset.characterError||'none'));
   assert.equal(status,'ready','Realistic model and animations should load');
+  const enemies=await page.evaluate(()=>window.__kageEnemies?.());
+  console.log('THREE ENEMY ARCHETYPES',JSON.stringify(enemies));
+  assert.equal(enemies?.length,3,'Three enemy types should spawn');
+  assert.deepEqual(enemies.map(e=>e.id),['shinobi','ashigaru','cursed']);
+  assert(enemies.every(e=>e.rigged),'Every enemy must have an animated, skinned rig');
+  assert(enemies.every(e=>e.bones>30&&e.skinned>=1),'All enemies have skeletal models');
+  assert(enemies.every(e=>e.equippedKind===e.id),'Each class has its own 3D armor and weapon equipment');
+  assert(enemies.every(e=>e.accessories>10),'Each model has distinctive mesh geometry');
+  assert(enemies[0].speed>enemies[1].speed,'Shinobi is fastest');
+  assert(enemies[1].range>enemies[0].range,'Ashigaru has longest attack reach');
+  assert(enemies[2].health>enemies[1].health&&enemies[2].damage>enemies[1].damage,'Cursed Ronin is tanky and hard-hitting');
+
   await page.locator('#start-button').click();
   assert(await page.locator('#creator').isVisible(),'First launch must open the creator');
   assert.equal(await page.locator('[data-preset]').count(),6,'Six preset choices available');
@@ -155,7 +167,7 @@ try{
   console.log('PRESET PERSISTENCE PASS:',JSON.stringify(savedAfterReload));
   if(errors.length)console.warn('Browser warnings/errors:',errors.join(' | '));
   assert.equal(errors.length,0,'No uncaught browser errors are allowed');
-  console.log('PASS: rigged 3D samurai is visible and game responds to movement and attack');
+  console.log('PASS: three distinct skinned and animated enemies, character creator, movement, combat and saved character');
 }finally{
   await browser.close();
 }
