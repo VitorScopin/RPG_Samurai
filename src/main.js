@@ -599,42 +599,84 @@ function updateMovement(dt){
   animateActor(hero,dt,state.lastMove,action,state.invulnerable>.3);
 }
 
-function updateEnemy(e,dt) {
+function updateEnemy(e,dt){
   if(e.dead||!e.actor.model.visible)return;
   const p=e.actor.model.position,pp=hero.model.position;
   const distance=dist(p,pp);
-  e.cooldown-=dt;e.stun=Math.max(0,e.stun-dt);
+  e.cooldown=Math.max(0,e.cooldown-dt);
+  e.stun=Math.max(0,e.stun-dt);
   e.attackTime=Math.max(0,e.attackTime-dt);
-  if(distance<(e.isBoss?18:13))e.notice=true;
-  let walking=0,acting='idle';
-  if(e.notice&&distance>2.2&&distance<33&&e.stun===0) {
-    const speed=e.isBoss?2.4:2.35;
-    const dx=(pp.x-p.x)/(distance||1),dz=(pp.z-p.z)/(distance||1);
-    const nextX=p.x+dx*speed*dt,nextZ=p.z+dz*speed*dt;
-    if(!world.collides(nextX,nextZ,.3)){p.x=nextX;p.z=nextZ;walking=speed;}
+  const profile=e.config||{
+    vision:18,speed:2.4,preferred:2.6,range:4.05,damage:34,
+    windup:.56,recovery:.58,cooldown:2.6,radius:.62,animation:'attack'
+  };
+  if(distance<profile.vision)e.notice=true;
+  if(e.notice&&distance>37&&!e.isBoss){
+    e.notice=false;e.pendingHit=false;e.windupRemaining=0;
   }
-  if(e.notice&&distance<= (e.isBoss?3.45:2.35)&&e.cooldown<=0&&e.stun===0&&!state.dead) {
-    e.attackTime=.60;
-    e.cooldown=e.isBoss?2.6:1.7+Math.random()*.5;
-    if(distance<4.1) {
-      // Telegraph provides a reaction window before damage resolves.
-      setTimeout(()=>{
-        if(!state.dead&&!state.paused&&!state.dialogue&&!e.dead&&e.actor.model.visible&&dist(e.actor.model.position,hero.model.position)<(e.isBoss?4.05:2.8)&&e.stun===0){
-          damageHero(e.isBoss?34:17,e);
+  if(e.pendingHit){
+    // Real simulation-time windups, not a setTimeout: pausing or dialogue
+    // suspends both animation and damage, and parries can cancel an attack.
+    if(e.stun>0){e.pendingHit=false;e.windupRemaining=0;}
+    else{
+      e.windupRemaining=Math.max(0,e.windupRemaining-dt);
+      if(e.windupRemaining<=0){
+        e.pendingHit=false;
+        const reach=profile.range+.25;
+        if(!state.dead&&distance<=reach&&e.actor.model.visible){
+          damageHero(profile.damage,e);
+          e.actor.model.position.y=0;
         }
-      },430);
+      }
     }
-    makeSound(e.isBoss?95:170,.24,'sawtooth',.025);
   }
-  if(e.notice) {
-    const target=Math.atan2(-(pp.x-p.x),-(pp.z-p.z));
-    const difference=Math.atan2(Math.sin(target-e.actor.model.rotation.y),Math.cos(target-e.actor.model.rotation.y));
-    e.actor.model.rotation.y+=difference*clamp(dt*7,0,1);
+
+  let speed=0,action='idle';
+  if(e.notice&&e.stun<=0&&e.attackTime<=0&&distance<34){
+    const dx=(pp.x-p.x)/(distance||1),dz=(pp.z-p.z)/(distance||1);
+    const preferred=profile.preferred;
+    let headingX=0,headingZ=0;
+    if(distance>preferred+.22){headingX=dx;headingZ=dz;}
+    else if(e.archetype==='shinobi'&&distance<preferred*.66){
+      headingX=-dx;headingZ=-dz;
+    }
+    // The assassin circles the player to exploit openings. The lance guard
+    // holds its line and the armored ronin approaches deliberately.
+    if(e.archetype==='shinobi'&&distance<5.3&&distance>1.35){
+      e.strafe+=dt;
+      const direction=Math.sin(e.strafe*.77)>=0?1:-1;
+      const side=(distance>preferred+.22)?.20:.76;
+      headingX+=-dz*side*direction;
+      headingZ+=dx*side*direction;
+    }
+    const m=Math.hypot(headingX,headingZ);
+    if(m>.001){
+      headingX/=m;headingZ/=m;
+      speed=profile.speed;
+      const nextX=p.x+headingX*speed*dt,nextZ=p.z+headingZ*speed*dt;
+      if(Number.isFinite(nextX)&&!world.collides(nextX,p.z,profile.radius))p.x=nextX;
+      if(Number.isFinite(nextZ)&&!world.collides(p.x,nextZ,profile.radius))p.z=nextZ;
+    }
   }
-  if(e.attackTime>0)acting='attack';
-  animateActor(e.actor,dt,walking,acting,e.stun>0);
-  if(!e.isBoss&&distance>35&&e.notice){e.notice=false;}
+  if(e.notice&&e.attackTime<=0&&e.cooldown<=0&&e.stun<=0&&!state.dead&&distance<=profile.range){
+    e.pendingHit=true;
+    e.windupRemaining=profile.windup;
+    e.attackTime=profile.windup+profile.recovery;
+    e.cooldown=profile.cooldown;
+    makeSound(e.isBoss?95:e.archetype==='shinobi'?255:e.archetype==='ashigaru'?162:108,.2,'sawtooth',.027);
+  }
+
+  if(e.notice){
+    const dx=pp.x-p.x,dz=pp.z-p.z;
+    const target=Math.atan2(-dx,-dz);
+    const current=Number.isFinite(e.actor.model.rotation.y)?e.actor.model.rotation.y:0;
+    const delta=Math.atan2(Math.sin(target-current),Math.cos(target-current));
+    e.actor.model.rotation.y=current+delta*clamp(dt*(e.archetype==='shinobi'?11:6.4),0,1);
+  }
+  if(e.attackTime>0)action=profile.animation;
+  animateActor(e.actor,dt,speed,action,e.stun>0);
 }
+
 function tick(){
   const dt=Math.min(clock.getDelta(),.05);
   if(creator.active){
