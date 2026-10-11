@@ -67,7 +67,7 @@ const bandits=world.enemies.map((p,i)=>{
   return {actor,archetype,config,spawn:{...p},
     health:config.health,maxHealth:config.health,dead:false,notice:false,
     cooldown:1+i*.62,attackTime:0,windupRemaining:0,pendingHit:false,
-    stun:0,velocity:0,walk:0,strafe:1+i,home:{...p},isBoss:false};
+    stun:0,dodgeTime:0,velocity:0,walk:0,strafe:1+i,home:{...p},isBoss:false};
 });
 const bossActor=createActor({type:'oni',name:'Oni da Montanha'});
 bossActor.model.position.set(world.boss.x,0,world.boss.z);
@@ -280,7 +280,8 @@ function damageEnemy(enemy,damage){
   const armor=enemy.config?.armor||0;
   const actual=Math.max(1,Math.round(damage*(1-armor)));
   enemy.health=Math.max(0,enemy.health-actual);
-  enemy.notice=true;enemy.stun=enemy.archetype==='cursed'?.13:.32;
+  enemy.notice=true;enemy.stun=enemy.archetype==='cursed'?.13:enemy.archetype==='shinobi'?.15:.32;
+  if(enemy.archetype==='shinobi')enemy.dodgeTime=.35;
   enemy.attackTime=0;enemy.pendingHit=false;enemy.windupRemaining=0;
   numberPopup(enemy.actor.model.position,'−'+actual,actual>=40);
   effects(enemy.actor.model.position.x,enemy.actor.model.position.z,0xffc6a2,.55);
@@ -352,7 +353,7 @@ function damageHero(amount,enemy){
 function resetEnemies() {
   bandits.forEach((e,i)=>{
     e.health=e.maxHealth;e.dead=false;e.notice=false;e.stun=0;e.cooldown=1+i*.62;
-    e.attackTime=0;e.pendingHit=false;e.windupRemaining=0;e.strafe=1+i;
+    e.attackTime=0;e.pendingHit=false;e.windupRemaining=0;e.dodgeTime=0;e.strafe=1+i;
     e.actor.model.visible=true;e.actor.model.position.set(e.spawn.x,0,e.spawn.z);
   });
   boss.health=boss.maxHealth;boss.dead=false;boss.stun=0;boss.notice=false;
@@ -607,6 +608,7 @@ function updateEnemy(e,dt){
   e.cooldown=Math.max(0,e.cooldown-dt);
   e.stun=Math.max(0,e.stun-dt);
   e.attackTime=Math.max(0,e.attackTime-dt);
+  e.dodgeTime=Math.max(0,(e.dodgeTime||0)-dt);
   const profile=e.config||{
     vision:18,speed:2.4,preferred:2.6,range:4.05,damage:34,
     windup:.56,recovery:.58,cooldown:2.6,radius:.62,animation:'attack'
@@ -633,7 +635,14 @@ function updateEnemy(e,dt){
   }
 
   let speed=0,action='idle';
-  if(e.notice&&e.stun<=0&&e.attackTime<=0&&distance<34){
+  if(e.dodgeTime>0&&e.archetype==='shinobi'&&distance>0){
+    const awayX=(p.x-pp.x)/distance,awayZ=(p.z-pp.z)/distance;
+    const evasiveSpeed=profile.speed*1.5;
+    const nx=p.x+awayX*evasiveSpeed*dt,nz=p.z+awayZ*evasiveSpeed*dt;
+    if(!world.collides(nx,p.z,profile.radius))p.x=nx;
+    if(!world.collides(p.x,nz,profile.radius))p.z=nz;
+    action='dodge';
+  }else if(e.notice&&e.stun<=0&&e.attackTime<=0&&distance<34){
     const dx=(pp.x-p.x)/(distance||1),dz=(pp.z-p.z)/(distance||1);
     const preferred=profile.preferred;
     let headingX=0,headingZ=0;
@@ -659,7 +668,7 @@ function updateEnemy(e,dt){
       if(Number.isFinite(nextZ)&&!world.collides(p.x,nextZ,profile.radius))p.z=nextZ;
     }
   }
-  if(e.notice&&e.attackTime<=0&&e.cooldown<=0&&e.stun<=0&&!state.dead&&distance<=profile.range){
+  if(e.notice&&e.attackTime<=0&&e.cooldown<=0&&e.stun<=0&&e.dodgeTime<=0&&!state.dead&&distance<=profile.range){
     e.pendingHit=true;
     e.windupRemaining=profile.windup;
     e.attackTime=profile.windup+profile.recovery;
@@ -675,6 +684,7 @@ function updateEnemy(e,dt){
     e.actor.model.rotation.y=current+delta*clamp(dt*(e.archetype==='shinobi'?11:6.4),0,1);
   }
   if(e.attackTime>0)action=profile.animation;
+  if(e.dodgeTime>0&&e.archetype==='shinobi')action='dodge';
   animateActor(e.actor,dt,speed,action,e.stun>0);
 }
 
