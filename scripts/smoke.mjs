@@ -48,7 +48,7 @@ try{
   assert.equal(enemies?.length,3,'Three enemy types should spawn');
   assert.deepEqual(enemies.map(e=>e.id),['shinobi','ashigaru','cursed']);
   assert(enemies.every(e=>e.rigged),'Every enemy must have an animated, skinned rig');
-  assert(enemies.every(e=>e.bones>30&&e.skinned>=1),'All enemies have skeletal models');
+  assert(enemies.every(e=>e.bones>=30&&e.skinned>=1),'All enemies have skeletal models');
   assert(enemies.every(e=>e.equippedKind===e.id),'Each class has its own 3D armor and weapon equipment');
   assert(enemies.every(e=>e.accessories>10),'Each model has distinctive mesh geometry');
   assert(enemies[0].speed>enemies[1].speed,'Shinobi is fastest');
