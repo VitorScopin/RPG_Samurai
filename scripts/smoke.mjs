@@ -12,7 +12,7 @@ const browser=await chromium.launch({
 const page=await browser.newPage({viewport:{width:1280,height:800}});
 const errors=[];
 page.on('pageerror',error=>errors.push(error.message));
-page.on('console',message=>{if(message.type()==='error')errors.push(message.text());if(['warn','error'].includes(message.type()))console.log('BROWSER '+message.type()+': '+message.text());});
+page.on('console',message=>{if(message.type()==='error')errors.push(message.text());if(['warning','warn','error'].includes(message.type()))console.log('BROWSER '+message.type()+': '+message.text());});
 try{
   let available=false;
   for(let attempt=0;attempt<40;attempt++){
