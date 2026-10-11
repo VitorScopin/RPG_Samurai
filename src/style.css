@@ -282,3 +282,13 @@ body[data-samurai-visual='fallback'] .model-status{color:#d7ab79}
   .preview-info{bottom:36px}
   .preview-actions{bottom:2px}
 }
+
+/* Enemy readability: roles identifiable even through fog */
+.enemy-label[data-kind="shinobi"] .enemy-health>div{background:linear-gradient(90deg,#31576a,#60acc3)}
+.enemy-label[data-kind="ashigaru"] .enemy-health>div{background:linear-gradient(90deg,#81703f,#d5bd72)}
+.enemy-label[data-kind="cursed"] .enemy-health>div{background:linear-gradient(90deg,#6a2431,#d25c59)}
+.enemy-label[data-kind="cursed"] span{color:#ffb1a8}
+.enemy-label[data-kind="ashigaru"] span{color:#e4d59f}
+.enemy-label[data-kind="shinobi"] span{color:#b3e2eb}
+.enemy-label.warning .enemy-health{animation:enemyWarning .22s alternate infinite}
+@keyframes enemyWarning{from{box-shadow:0 0 0 transparent}to{box-shadow:0 0 14px #d65c4aab;}}
