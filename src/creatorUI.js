@@ -109,7 +109,7 @@ export function setupCharacterCreator({actor,onConfirm,onCancel}){
   for(const type of ['pointerup','pointercancel','lostpointercapture'])
     visual.addEventListener(type,()=>{dragging=false;});
   return {
-    open,close,
+    open,close,refreshAppearance:updateAppearance,
     get active(){return active;},
     setModelStatus(loaded){
       $('#creator-model-status').textContent=loaded?'MODELO 3D DETALHADO · ANIMAÇÕES ATIVAS':'MODELO BÁSICO · RECURSOS INDISPONÍVEIS';
