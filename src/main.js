@@ -70,13 +70,21 @@ const enemies=[...bandits,boss];
 boss.actor.model.visible=false;
 // Load the skinned, textured samurai and authored FBX motions, while retaining
 // the procedural meshes as an immediate, offline-safe fallback.
+document.body.dataset.samuraiVisual='loading';
 installRealisticSamurai([
   {actor:hero,role:'hero'},
   {actor:mentor,role:'mentor'},
   ...bandits.map(e=>({actor:e.actor,role:'bandit'}))
 ]).then(count=>{
-  if(count&&state.started)toast('PERSONAGENS 3D DETALHADOS CARREGADOS','gold');
-}).catch(error=>console.warn('Samurai detalhado não carregou; usando modelos anteriores.',error));
+  const ready=count>0&&hero.rigged;
+  document.body.dataset.samuraiVisual=ready?'ready':'fallback';
+  $('#model-status').textContent=ready?'PERSONAGENS 3D · ANIMAÇÕES ATIVAS':'MODO CLÁSSICO · FALLBACK';
+  if(ready&&state.started)toast('PERSONAGENS 3D DETALHADOS CARREGADOS','gold');
+}).catch(error=>{
+  document.body.dataset.samuraiVisual='fallback';
+  $('#model-status').textContent='MODO CLÁSSICO · FALLBACK';
+  console.warn('Samurai detalhado não carregou; usando modelos anteriores.',error);
+});
 const state={
   started:false,paused:true,dead:false,dialogue:false,sound:true,
   level:1,xp:0,health:100,stamina:100,coins:0,potions:3,
