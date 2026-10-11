@@ -28,6 +28,21 @@ try{
   console.log('Character status:',status);
   console.log('Character exception:',await page.evaluate(()=>document.body.dataset.characterError||'none'));
   assert.equal(status,'ready','Realistic model and animations should load');
+  // Distinct animated 3D enemy classes must load together with the hero.
+  const enemyRoster=await page.evaluate(()=>window.__kageEnemies?.());
+  console.log('ENEMY ROSTER:',JSON.stringify(enemyRoster));
+  assert(Array.isArray(enemyRoster),'Enemy diagnostics must be available in development');
+  assert.deepEqual(enemyRoster.map(e=>e.id),['shinobi','ashigaru','cursed'],'Expected three distinct enemy archetypes');
+  for(const e of enemyRoster){
+    assert(e.rigged,e.id+' must have a rigged FBX model');
+    assert.equal(e.equippedKind,e.id,e.id+' must receive its own 3D equipment');
+    assert(e.bones>20&&e.skinned>0,e.id+' must have an animated skeleton and a skinned mesh');
+    assert(e.accessories>8,e.id+' must have a distinctive 3D model silhouette and equipment');
+    assert(e.health>0&&e.speed>0&&e.range>0&&e.damage>0,e.id+' must be combat-ready');
+  }
+  assert(new Set(enemyRoster.map(e=>e.maxHealth)).size===3,'Enemy archetypes should have different health');
+  assert(new Set(enemyRoster.map(e=>e.speed)).size===3,'Enemy archetypes should have different movement speed');
+
   const enemies=await page.evaluate(()=>window.__kageEnemies?.());
   console.log('THREE ENEMY ARCHETYPES',JSON.stringify(enemies));
   assert.equal(enemies?.length,3,'Three enemy types should spawn');
