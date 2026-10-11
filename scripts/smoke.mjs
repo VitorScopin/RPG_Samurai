@@ -54,6 +54,15 @@ try{
   assert(enemies[0].speed>enemies[1].speed,'Shinobi is fastest');
   assert(enemies[1].range>enemies[0].range,'Ashigaru has longest attack reach');
   assert(enemies[2].health>enemies[1].health&&enemies[2].damage>enemies[1].damage,'Cursed Ronin is tanky and hard-hitting');
+  const attacks=await page.evaluate(()=>[0,1,2].map(i=>window.__kageEnemyAttackProbe?.(i)));
+  console.log('THREE ENEMY ATTACKS',JSON.stringify(attacks));
+  assert(attacks.every(a=>a?.pending===true),'All three enemy AIs must start real telegraphed attacks');
+  assert(attacks.every(a=>a?.windup>0&&a.cooldown>0),'Every attack has windup and cooldown');
+  assert.equal(attacks[0].animation,'attack','Shinobi plays the fast slash');
+  assert.equal(attacks[1].animation,'heavy','Ashigaru uses heavy polearm strike');
+  assert.equal(attacks[2].animation,'heavy','Armored ronin uses heavy odachi strike');
+  assert(attacks[0].windup<attacks[1].windup&&attacks[1].windup<attacks[2].windup,'Different attack telegraph speeds');
+
 
   await page.locator('#start-button').click();
   assert(await page.locator('#creator').isVisible(),'First launch must open the creator');
