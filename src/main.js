@@ -122,6 +122,7 @@ installRealisticSamurai([
   if(ready&&state.started)toast('PERSONAGENS 3D DETALHADOS CARREGADOS','gold');
 }).catch(error=>{
   document.body.dataset.samuraiVisual='fallback';
+  document.body.dataset.characterError=String(error?.stack||error);
   $('#model-status').textContent='MODO CLÁSSICO · FALLBACK';
   applyCharacterAppearance(hero,currentCharacter||DEFAULT_CHARACTER);
   creator.refreshAppearance();
