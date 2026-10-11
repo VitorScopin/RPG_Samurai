@@ -4,7 +4,7 @@ import { createActor, animateActor } from './actor.js';
 import { installRealisticSamurai } from './realisticSamurai.js';
 import { createCharacterPreviewScene, loadCharacter, DEFAULT_CHARACTER, applyCharacterAppearance } from './characterCustomization.js';
 import { setupCharacterCreator } from './creatorUI.js';
-import { ENEMY_ORDER,archetypeFor } from './enemyArchetypes.js';
+import { ENEMY_ORDER,archetypeFor,decorateFallbackEnemy } from './enemyArchetypes.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -61,6 +61,7 @@ const bandits=world.enemies.map((p,i)=>{
   const archetype=ENEMY_ORDER[i%ENEMY_ORDER.length];
   const config=archetypeFor(archetype);
   const actor=createActor({type:'bandit',name:config.name});
+  decorateFallbackEnemy(actor,archetype);
   actor.model.position.set(p.x,0,p.z);
   scene.add(actor.model);
   return {actor,archetype,config,spawn:{...p},
@@ -775,6 +776,25 @@ renderer.setAnimationLoop(tick);
 camera.position.set(0,8,24);camera.lookAt(0,1,5);
 mapDraw();
 if(import.meta.env.DEV){
+  window.__kageEnemies=()=>bandits.map(e=>{
+    const detailed=e.actor.model.getObjectByName('DetailedSamurai');
+    const source=detailed?.children[0];
+    let bones=0,accessories=0,skinned=0;
+    source?.traverse(obj=>{
+      if(obj.isBone)bones++;
+      if(obj.isSkinnedMesh)skinned++;
+      if(obj.isMesh&&!obj.isSkinnedMesh)accessories++;
+    });
+    return {
+      id:e.archetype,name:e.actor.name,health:e.health,maxHealth:e.maxHealth,
+      speed:e.config.speed,range:e.config.range,damage:e.config.damage,
+      rigged:!!e.actor.rigged,bones,skinned,accessories,
+      equippedKind:source?.userData.enemyKind||null,
+      visible:e.actor.model.visible,dead:e.dead,
+      attacking:e.attackTime>0,windup:e.windupRemaining,
+      x:e.actor.model.position.x,z:e.actor.model.position.z
+    };
+  });
   window.__kageDebug=()=>{
     const character=hero.model.children.find(c=>c.name==='DetailedSamurai');
     const rig=character?.children.find(c=>c.isGroup||c.isObject3D);
