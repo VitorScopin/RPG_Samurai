@@ -4,6 +4,7 @@ import { createActor, animateActor } from './actor.js';
 import { installRealisticSamurai } from './realisticSamurai.js';
 import { createCharacterPreviewScene, loadCharacter, DEFAULT_CHARACTER, applyCharacterAppearance } from './characterCustomization.js';
 import { setupCharacterCreator } from './creatorUI.js';
+import { ENEMY_ORDER,archetypeFor } from './enemyArchetypes.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -13,7 +14,7 @@ const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const SAVE_KEY='kage-no-michi-v1';
 const QUESTS=[
   {title:'Um encontro no crepúsculo',desc:'Encontre e converse com Mestre Hideo na aldeia.',label:'Siga o marcador dourado',value:0},
-  {title:'Sombras na estrada',desc:'Elimine os três saqueadores que aterrorizam o vale.',label:'Saqueadores derrotados',value:0},
+  {title:'Três ameaças na estrada',desc:'Derrote o Shinobi, o Lanceiro Ashigaru e o Ronin Corrompido.',label:'Guerreiros derrotados',value:0},
   {title:'A palavra do mestre',desc:'Retorne à aldeia e fale com Mestre Hideo.',label:'Retorne ao seu mentor',value:0},
   {title:'O demônio do santuário',desc:'Encontre e derrote o Oni além dos portais torii.',label:'Oni do santuário',value:0},
   {title:'A honra restaurada',desc:'Volte ao Mestre Hideo e conte sobre a vitória.',label:'Seu mestre aguarda',value:0},
@@ -57,11 +58,15 @@ mentor.model.position.set(world.mentor.x,0,world.mentor.z);
 mentor.model.rotation.y=Math.PI*.75;
 scene.add(mentor.model);
 const bandits=world.enemies.map((p,i)=>{
-  const actor=createActor({type:'bandit',name:'Saqueador'});
+  const archetype=ENEMY_ORDER[i%ENEMY_ORDER.length];
+  const config=archetypeFor(archetype);
+  const actor=createActor({type:'bandit',name:config.name});
   actor.model.position.set(p.x,0,p.z);
   scene.add(actor.model);
-  return {actor,spawn:{...p},health:65,maxHealth:65,dead:false,notice:false,
-    cooldown:1+i*.6,attackTime:0,stun:0,velocity:0,walk:0,home:{...p},isBoss:false};
+  return {actor,archetype,config,spawn:{...p},
+    health:config.health,maxHealth:config.health,dead:false,notice:false,
+    cooldown:1+i*.62,attackTime:0,windupRemaining:0,pendingHit:false,
+    stun:0,velocity:0,walk:0,strafe:1+i,home:{...p},isBoss:false};
 });
 const bossActor=createActor({type:'oni',name:'Oni da Montanha'});
 bossActor.model.position.set(world.boss.x,0,world.boss.z);
@@ -111,7 +116,7 @@ installRealisticSamurai([
   {actor:hero,role:'hero'},
   {actor:previewActor,role:'hero'},
   {actor:mentor,role:'mentor'},
-  ...bandits.map(e=>({actor:e.actor,role:'bandit'}))
+  ...bandits.map(e=>({actor:e.actor,role:e.archetype}))
 ]).then(count=>{
   const ready=count>0&&hero.rigged;
   document.body.dataset.samuraiVisual=ready?'ready':'fallback';
@@ -203,7 +208,7 @@ function updateQuest(){
   $('#quest-description').textContent=q.desc;
   const progress=state.quest===1?state.kills/3:q.value;
   $('#quest-progress-fill').style.width=clamp(progress*100,0,100)+'%';
-  $('#quest-progress-label').textContent=state.quest===1?state.kills+' / 3 saqueadores derrotados':q.label;
+  $('#quest-progress-label').textContent=state.quest===1?state.kills+' / 3 guerreiros derrotados':q.label;
   boss.actor.model.visible=state.quest>=3&&!boss.dead;
   save();
 }
@@ -218,7 +223,7 @@ function advanceQuest(next){
   toast(next===5?'CAPÍTULO I CONCLUÍDO — HONRA RESTAURADA':'NOVA ETAPA DA MISSÃO','gold');
 }
 function talkToMentor() {
-  if(state.quest===0) showDialogue('Finalmente nos encontramos, jovem ronin. Saqueadores profanaram nossa terra. Mostre que sua lâmina ainda conhece a honra. Liberte a estrada e volte a mim.',()=>advanceQuest(1));
+  if(state.quest===0) showDialogue('Finalmente nos encontramos, jovem ronin. Um shinobi, um lanceiro e um ronin corrompido profanaram nossas terras. Cada um luta de uma forma. Vença os três e volte a mim.',()=>advanceQuest(1));
   else if(state.quest===1) showDialogue('Não deixe que a fúria empunhe sua katana. Observe o inimigo, proteja sua guarda e ataque no instante certo. Os três invasores ainda rondam o vale.');
   else if(state.quest===2) showDialogue('Sua coragem trouxe esperança, mas um mal antigo despertou junto ao santuário. Além dos dois portais vermelhos, um Oni aguarda. Enfrente-o, meu discípulo.',()=>advanceQuest(3));
   else if(state.quest===3) showDialogue('O santuário está ao sul da trilha. O Oni golpeia com força, mas cada ataque revela uma abertura. Use a esquiva, defenda-se e sobreviva.');
@@ -254,24 +259,29 @@ function effects(x,z,color=0xeec7a4,size=1) {
 }
 function enemyDies(enemy){
   enemy.dead=true;enemy.actor.model.visible=false;
-  state.coins+=enemy.isBoss?85:22;
-  addXP(enemy.isBoss?200:45);
-  makeSound(enemy.isBoss?110:160,.32,'sawtooth',.035);
+  const coins=enemy.isBoss?85:enemy.config.coins;
+  const gainedXP=enemy.isBoss?200:enemy.config.xp;
+  state.coins+=coins;
+  addXP(gainedXP);
+  makeSound(enemy.isBoss?110:enemy.archetype==='cursed'?118:160,.32,'sawtooth',.035);
   if(enemy.isBoss) {if(state.quest===3)advanceQuest(4);toast('O ONI FOI DERROTADO! +200 XP','gold');}
   else {
     if(state.quest===1){
       state.kills=Math.min(3,state.kills+1);
       if(state.kills===3)advanceQuest(2);else updateQuest();
     }
-    toast('+45 XP   •   +22 MON','gold');
+    toast(enemy.config.name.toUpperCase()+' VENCIDO! +'+gainedXP+' XP · +'+coins+' MON','gold');
   }
   save();
 }
 function damageEnemy(enemy,damage){
   if(enemy.dead||enemy.stun>0.3)return;
-  enemy.health=Math.max(0,enemy.health-damage);
-  enemy.notice=true;enemy.stun=.23;enemy.attackTime=0;
-  numberPopup(enemy.actor.model.position,'−'+damage,damage>=40);
+  const armor=enemy.config?.armor||0;
+  const actual=Math.max(1,Math.round(damage*(1-armor)));
+  enemy.health=Math.max(0,enemy.health-actual);
+  enemy.notice=true;enemy.stun=enemy.archetype==='cursed'?.13:.32;
+  enemy.attackTime=0;enemy.pendingHit=false;enemy.windupRemaining=0;
+  numberPopup(enemy.actor.model.position,'−'+actual,actual>=40);
   effects(enemy.actor.model.position.x,enemy.actor.model.position.z,0xffc6a2,.55);
   makeSound(185,.13,'square',.025);
   if(enemy.health<=0)enemyDies(enemy);
@@ -340,7 +350,8 @@ function damageHero(amount,enemy){
 }
 function resetEnemies() {
   bandits.forEach((e,i)=>{
-    e.health=e.maxHealth;e.dead=false;e.notice=false;e.stun=0;e.cooldown=1+i*.5;
+    e.health=e.maxHealth;e.dead=false;e.notice=false;e.stun=0;e.cooldown=1+i*.62;
+    e.attackTime=0;e.pendingHit=false;e.windupRemaining=0;e.strafe=1+i;
     e.actor.model.visible=true;e.actor.model.position.set(e.spawn.x,0,e.spawn.z);
   });
   boss.health=boss.maxHealth;boss.dead=false;boss.stun=0;boss.notice=false;
@@ -505,7 +516,7 @@ function updateHUD(){
   hoveringEnemy=active[0]||null;
   $('#enemy-label').classList.toggle('visible',!!hoveringEnemy);
   if(hoveringEnemy) {
-    $('#enemy-name').textContent=hoveringEnemy.isBoss?'ONI DA MONTANHA · CHEFE':'SAQUEADOR · HOSTIL';
+    $('#enemy-name').textContent=hoveringEnemy.isBoss?'ONI DA MONTANHA · CHEFE':hoveringEnemy.config.title+' · HOSTIL';
     $('#enemy-health-fill').style.width=hoveringEnemy.health/hoveringEnemy.maxHealth*100+'%';
   }
   mapDraw();
