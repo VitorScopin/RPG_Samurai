@@ -517,6 +517,8 @@ function updateHUD(){
   active.sort((a,b)=>dist(a.actor.model.position,hero.model.position)-dist(b.actor.model.position,hero.model.position));
   hoveringEnemy=active[0]||null;
   $('#enemy-label').classList.toggle('visible',!!hoveringEnemy);
+  $('#enemy-label').classList.toggle('warning',!!hoveringEnemy?.pendingHit);
+  $('#enemy-label').dataset.kind=hoveringEnemy?.archetype||(hoveringEnemy?.isBoss?'oni':'');
   if(hoveringEnemy) {
     $('#enemy-name').textContent=hoveringEnemy.isBoss?'ONI DA MONTANHA · CHEFE':hoveringEnemy.config.title+' · HOSTIL';
     $('#enemy-health-fill').style.width=hoveringEnemy.health/hoveringEnemy.maxHealth*100+'%';
