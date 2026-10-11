@@ -573,3 +573,23 @@ function tick(){
 renderer.setAnimationLoop(tick);
 camera.position.set(0,8,24);camera.lookAt(0,1,5);
 mapDraw();
+if(import.meta.env.DEV){
+  window.__kageDebug=()=>{
+    const character=hero.model.children.find(c=>c.name==='DetailedSamurai');
+    const rig=character?.children.find(c=>c.isGroup||c.isObject3D);
+    const bounds=character?new THREE.Box3().setFromObject(character):null;
+    const size=bounds?bounds.getSize(new THREE.Vector3()):null;
+    return {
+      hero:{x:hero.model.position.x,y:hero.model.position.y,z:hero.model.position.z,angle:hero.model.rotation.y},
+      camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,up:camera.up.toArray()},
+      cameraDistance:camera.position.distanceTo(hero.model.position),
+      rigLoaded:hero.rigged||false,
+      rigWorldSize:size?size.toArray():null,
+      skeletonHips:rig?.getObjectByName('mixamorigHips')?.position.toArray()||null,
+      moveSpeed:state.lastMove,
+      yaw:state.yaw,
+      elapsed:state.time
+    };
+  };
+}
+
