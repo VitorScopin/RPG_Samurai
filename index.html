@@ -22,7 +22,7 @@
           <button id="sound-toggle" class="icon-button" title="Ligar ou desligar áudio" aria-label="Alternar áudio">♪</button>
         </header>
         <div class="stats">
-          <div class="hero-name"><span class="hero-emblem">侍</span><div><b>RONIN</b><small><span id="level">NÍVEL 1</span> · SAMURAI ERRANTE</small></div></div>
+          <div class="hero-name"><span class="hero-emblem">侍</span><div><b id="player-name">RONIN</b><small><span id="level">NÍVEL 1</span> · SAMURAI ERRANTE</small></div></div>
           <div class="stat-line"><span>VIDA</span><div class="bar health"><div id="health-fill"></div></div><b id="health-text">100 / 100</b></div>
           <div class="stat-line"><span>VIGOR</span><div class="bar stamina"><div id="stamina-fill"></div></div><b id="stamina-text">100 / 100</b></div>
           <div class="xp-line"><span>EXPERIÊNCIA</span><div class="bar xp"><div id="xp-fill"></div></div></div>
@@ -45,8 +45,42 @@
         <div class="mobile-controls"><div class="dpad"><button data-key="KeyW" class="up">↑</button><button data-key="KeyA" class="left">←</button><button data-key="KeyS" class="down">↓</button><button data-key="KeyD" class="right">→</button></div><div class="action-pad"><button data-action="attack">⚔</button><button data-action="block">⛨</button><button data-action="dodge">↝</button><button data-action="interact">E</button><button data-action="heal">✚</button></div></div>
       </div>
       <div id="dialogue" class="dialogue hidden" role="dialog" aria-modal="true"><div class="dialogue-portrait">武</div><div class="dialogue-content"><div class="eyebrow">MESTRE HIDEO</div><p id="dialogue-text"></p><button id="dialogue-next">CONTINUAR <span>↗</span></button></div></div>
-      <div id="menu" class="screen menu"><div class="menu-haze"></div><div class="menu-main"><div class="seal">武士道</div><div class="menu-kicker">UMA JORNADA DE HONRA E REDENÇÃO</div><div class="japanese-title">影の道</div><h1>KAGE <em>NO</em> MICHI</h1><div class="ornament"><span></span> ❖ <span></span></div><p>O caminho das sombras começa onde a honra termina.</p><button id="start-button" class="main-button">INICIAR JORNADA <span>→</span></button><button id="new-game-button" class="secondary-button">NOVA JORNADA · REINICIAR PROGRESSO</button></div><div class="menu-bottom"><span>UM RPG DE AÇÃO EM TERCEIRA PESSOA</span><span>CAPÍTULO I — O DESPERTAR</span><span>© KAGE NO MICHI</span></div></div>
-      <div id="pause-screen" class="screen pause hidden"><div class="modal"><div class="seal">休息</div><small>O CAMINHO ESPERA</small><h2>PAUSADO</h2><p>Até mesmo uma lâmina precisa de descanso.</p><button id="resume-button" class="main-button">CONTINUAR JORNADA →</button><button id="back-menu-button" class="secondary-button">VOLTAR AO MENU</button></div></div>
+      <div id="menu" class="screen menu"><div class="menu-haze"></div><div class="menu-main"><div class="seal">武士道</div><div class="menu-kicker">UMA JORNADA DE HONRA E REDENÇÃO</div><div class="japanese-title">影の道</div><h1>KAGE <em>NO</em> MICHI</h1><div class="ornament"><span></span> ❖ <span></span></div><p>O caminho das sombras começa onde a honra termina.</p><button id="start-button" class="main-button">INICIAR JORNADA <span>→</span></button><button id="new-game-button" class="secondary-button">NOVA JORNADA · CRIAR PERSONAGEM</button>
+<button id="customize-button" class="secondary-button">PERSONALIZAR PERSONAGEM ↗</button></div><div class="menu-bottom"><span>UM RPG DE AÇÃO EM TERCEIRA PESSOA</span><span>CAPÍTULO I — O DESPERTAR</span><span>© KAGE NO MICHI</span></div></div>
+      <section id="creator" class="screen creator hidden" role="dialog" aria-modal="true" aria-label="Criar seu samurai">
+        <div class="creator-layout">
+          <div class="creator-panel">
+            <div class="creator-brand"><span>影</span><div><small>KAGE NO MICHI</small><strong>CRIE SUA LENDA</strong></div></div>
+            <div class="eyebrow">CAPÍTULO ZERO · SEU DESTINO</div>
+            <h2>Seu <em>samurai.</em><br>Sua história.</h2>
+            <p class="creator-lead">Escolha um estilo para começar. Personalize seu guerreiro e veja as mudanças no modelo 3D.</p>
+            <div class="creator-scroll">
+              <label class="creator-label" for="character-name">NOME DO PERSONAGEM <span>01 / 05</span></label>
+              <input id="character-name" class="creator-input" type="text" maxlength="18" autocomplete="off" spellcheck="false" placeholder="Akira" />
+              <div class="creator-label">PRESSETS DE GUERREIRO <span>02 / 05</span></div>
+              <div id="preset-grid" class="preset-grid" role="group" aria-label="Estilos de samurai"></div>
+              <div class="creator-label">COR DA ARMADURA <span>03 / 05</span></div>
+              <div id="armor-swatches" class="swatches" role="group" aria-label="Cores da armadura"></div>
+              <div class="creator-label">COR DOS DETALHES <span>04 / 05</span></div>
+              <div id="accent-swatches" class="swatches" role="group" aria-label="Cores de detalhes"></div>
+              <div class="creator-label">ACESSÓRIO E PORTE <span>05 / 05</span></div>
+              <div id="headwear-options" class="headwear-options" role="group" aria-label="Acessórios para cabeça"></div>
+              <div class="body-setting"><label for="character-build">PORTE FÍSICO</label><input id="character-build" type="range" min="0.88" max="1.12" step="0.01" value="1" /><output id="build-text">PADRÃO</output></div>
+            </div>
+            <div class="creator-actions">
+              <button id="creator-confirm" class="main-button">CONFIRMAR PERSONAGEM <span>→</span></button>
+              <button id="creator-cancel" class="secondary-button">← VOLTAR SEM SALVAR</button>
+            </div>
+          </div>
+          <div class="creator-visual" aria-hidden="true">
+            <span class="visual-kicker">O CAMINHO DO GUERREIRO</span>
+            <div class="preview-info"><span id="preview-mark">浪</span><div><strong id="preview-name">AKIRA</strong><small id="preview-class">RONIN ERRANTE</small></div></div>
+            <div class="preview-actions"><button id="rotate-left" aria-label="Girar personagem para a esquerda">↶</button><span>ARRASTE PARA GIRAR • VISUALIZAÇÃO 3D</span><button id="rotate-right" aria-label="Girar personagem para a direita">↷</button></div>
+            <span id="creator-model-status" class="creator-model-status">CARREGANDO MODELO 3D...</span>
+          </div>
+        </div>
+      </section>
+      <div id="pause-screen" class="screen pause hidden"><div class="modal"><div class="seal">休息</div><small>O CAMINHO ESPERA</small><h2>PAUSADO</h2><p>Até mesmo uma lâmina precisa de descanso.</p><button id="resume-button" class="main-button">CONTINUAR JORNADA →</button><button id="pause-customize-button" class="secondary-button">PERSONALIZAR PERSONAGEM ↗</button><button id="back-menu-button" class="secondary-button">VOLTAR AO MENU</button></div></div>
       <div id="death-screen" class="screen death hidden"><div class="modal"><div class="seal">死</div><small>O PREÇO DA GUERRA</small><h2>A LÂMINA CAIU</h2><p>A derrota é passageira. A honra permanece.</p><button id="respawn-button" class="main-button">RENASCER NA ALDEIA →</button></div></div>
       <div id="help" class="loading hidden">Prepare sua katana...</div>
     </div>
