@@ -628,12 +628,23 @@ function tick(){
   const dt=Math.min(clock.getDelta(),.05);
   if(creator.active){
     creator.update(dt);
-    preview.stage.position.x=innerWidth>720?1.75:0;
-    preview.camera.aspect=innerWidth/innerHeight;
+    const mobilePreview=innerWidth<=720;
+    const viewHeight=mobilePreview?Math.round(innerHeight*.40):innerHeight;
+    preview.stage.position.x=mobilePreview?0:1.75;
+    preview.camera.aspect=innerWidth/viewHeight;
+    preview.camera.position.set(0,2.85,mobilePreview?7.4:7.7);
+    preview.camera.lookAt(0,1.4,0);
     preview.camera.updateProjectionMatrix();
+    // Mobile renders the samurai only in the top preview region. The controls
+    // remain readable instead of obscuring the model in the bottom sheet.
+    renderer.setScissorTest(mobilePreview);
+    renderer.setViewport(0,innerHeight-viewHeight,innerWidth,viewHeight);
+    if(mobilePreview)renderer.setScissor(0,innerHeight-viewHeight,innerWidth,viewHeight);
     renderer.render(preview.scene,preview.camera);
     return;
   }
+  renderer.setScissorTest(false);
+  renderer.setViewport(0,0,innerWidth,innerHeight);
   const time=clock.elapsedTime;
   world.update(time,dt);
   const active=state.started&&!state.paused&&!state.dead&&!state.dialogue;
