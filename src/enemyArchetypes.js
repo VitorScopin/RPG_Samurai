@@ -165,3 +165,38 @@ export function decorateEnemyRig(fbx,bones,kind){
   type(bones,fbx);
   fbx.userData.enemyKind=kind;
 }
+
+
+/**
+ * Offline-safe replacements while the detailed FBX downloads. Fallback helmets
+ * stay parented to the procedural body's group and weapons to the animated arm.
+ * The entire fallback is hidden when the real rig arrives.
+ */
+export function decorateFallbackEnemy(actor,kind){
+  if(!actor?.body||actor.fallbackEnemyKind===kind)return;
+  actor.fallbackEnemyKind=kind;
+  const body=actor.body,arm=actor.armR;
+  if(kind==='shinobi'){
+    const m=mat('#121d25');
+    piece(body,box(.49,.23,.25),m,0,2.74,-.23);
+    piece(body,box(.50,.12,.46),mat('#2c6f80'),0,2.91,0);
+    const blade=piece(arm,box(.095,1.05,.11),mat('#a3b3b7',.88),0,-.1,-.49,.35);
+    blade.rotation.z=-.33;
+  }else if(kind==='ashigaru'){
+    const wood=mat('#705e38');
+    piece(body,cyl(.75,.75,.065,20),mat('#8a784f'),0,3.04,0);
+    piece(body,con(.78,.45,20),mat('#b4a16e'),0,3.29,0);
+    piece(body,box(.85,.55,.22),mat('#465744'),0,1.78,-.28);
+    piece(arm,cyl(.028,.035,3.1,8),wood,0,1.15,0);
+    piece(arm,con(.13,.55,7),mat('#d8dad0',.9),0,2.95,0);
+  }else if(kind==='cursed'){
+    const dark=mat('#191b20');
+    piece(body,box(.94,.52,.52),mat('#7c2933'),0,1.88,-.09);
+    piece(body,box(.54,.33,.30),dark,0,2.72,-.22);
+    for(const side of [-1,1]){
+      piece(body,con(.2,.72,9),mat('#dac5a1'),side*.3,3.19,0,0,0,side*-.33);
+      piece(body,box(.13,.09,.035),mat('#e25c43',0,.4,0xe73525),side*.14,2.75,-.41);
+    }
+    piece(arm,box(.16,2.17,.1),mat('#d7b6a7',.9),0,.55,-.18,-.15);
+  }
+}
