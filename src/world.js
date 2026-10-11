@@ -120,6 +120,7 @@ function sign(scene,x,z,label) {
 export function createWorld(scene) {
   seed=49127;
   const solids=[];
+  const cameraObstacles=[];
   scene.background=new THREE.Color(0x9aa8a8);
   scene.fog=new THREE.FogExp2(0x98a8a6,.0115);
   const hemi=new THREE.HemisphereLight(0xd7e5e6,0x3b493e,2.05);scene.add(hemi);
@@ -141,7 +142,9 @@ export function createWorld(scene) {
   route(scene,[[0,4],[-8,2],[-15,-5]],2.55);
   // Main village.
   for(const [x,z,rot,s] of [[-10,10,.18,.95],[11,9,-.14,1],[12,-2,.5,.74],[-12,-1,-.35,.82]]) {
-    house(scene,x,z,rot,s);solids.push({x,z,r:3.9*s});
+    const building=house(scene,x,z,rot,s);
+    building.traverse(part=>{if(part.isMesh)cameraObstacles.push(part);});
+    solids.push({x,z,r:3.9*s});
   }
   torii(scene,0,-5,.98);torii(scene,9,-31,1.08);
   for(const [x,z] of [[-3,-4],[3,-4],[7,-30],[12,-30],[-4,11],[4,11]])lantern(scene,x,z,.95);
@@ -151,7 +154,8 @@ export function createWorld(scene) {
   }
   // Small shrine uphill, the Oni's domain.
   const shrine=new THREE.Group();shrine.position.set(12,0,-45);scene.add(shrine);
-  house(scene,12,-46,0,.66);
+  const sanctuary=house(scene,12,-46,0,.66);
+  sanctuary.traverse(part=>{if(part.isMesh)cameraObstacles.push(part);});
   for(let i=0;i<6;i++) {
     const s=box(scene,mats.stone,11,.07+i*.12,-37-i*1.5,4.8,.14,.86);
     s.position.y=.06+i*.12;
@@ -191,7 +195,7 @@ export function createWorld(scene) {
   }
   const boundary=68;
   return {
-    solids,boundary,
+    solids,cameraObstacles,boundary,
     mentor:{x:2,z:8},
     enemies:[{x:-7,z:-17},{x:13,z:-21},{x:-8,z:-38}],
     boss:{x:11,z:-55},
