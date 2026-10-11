@@ -31,6 +31,26 @@ Abra o endereço indicado pelo Vite (normalmente http://localhost:5173). Para ge
 
 Há controles táteis em telas menores.
 
+## Criador de personagem (presets)
+
+Na primeira vez em que clicar em **INICIAR JORNADA**, você entrará no
+criador de personagem. É possível reabrir essa tela por
+**PERSONALIZAR PERSONAGEM**, no menu principal ou no menu de pausa.
+
+- **6 presets:** Ronin Errante, Kensei, Sombra, Guarda Escarlate,
+  Guardião Hayashi e Lua Prateada.
+- **Nome próprio** (até 18 caracteres), 8 cores de armadura, 8 cores de detalhes.
+- **Acessórios:** nenhum, hachimaki, chapéu kasa ou máscara.
+- **Porte físico visual:** ágil, equilibrado ou robusto.
+- **Prévia 3D animada:** girar arrastando e pelos botões laterais.
+- **Salvar:** aparência e nome ficam persistidos em `localStorage`
+  independentemente do progresso da história.
+
+O sistema personaliza o único modelo humanoide disponível por meio de
+cores, elementos sobrepostos e ajustes de silhueta. **Não oferece ainda**
+malhas alternativas de rosto, cabelo, gênero ou armaduras completas;
+isso dependerá de incorporar novos modelos 3D licenciados.
+
 ## Novo: samurai realista com animações de esqueleto
 
 A partir desta atualização o jogo carrega um **samurai texturizado (PBR) com
