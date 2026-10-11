@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { createWorld } from './world.js';
 import { createActor, animateActor } from './actor.js';
 import { installRealisticSamurai } from './realisticSamurai.js';
+import { createCharacterPreviewScene, loadCharacter, DEFAULT_CHARACTER, applyCharacterAppearance } from './characterCustomization.js';
+import { setupCharacterCreator } from './creatorUI.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -68,21 +70,62 @@ const boss={actor:bossActor,spawn:{...world.boss},health:230,maxHealth:230,dead:
   cooldown:1.8,attackTime:0,stun:0,velocity:0,walk:0,home:{...world.boss},isBoss:true};
 const enemies=[...bandits,boss];
 boss.actor.model.visible=false;
+// The creator uses the SAME WebGL renderer as gameplay to avoid running two
+// heavyweight contexts (and works even before downloaded FBX assets arrive).
+const preview=createCharacterPreviewScene();
+const previewActor=createActor({type:'hero'});
+preview.stage.add(previewActor.model);
+let currentCharacter=loadCharacter();
+let creatorFlow={from:'menu',startAfter:false,fresh:false};
+function restoreCreatorOrigin(){
+  if(creatorFlow.from==='pause'&&state.started){
+    $('#hud').classList.remove('hidden');
+    $('#pause-screen').classList.remove('hidden');
+  }else{
+    $('#menu').classList.remove('hidden');
+  }
+}
+const creator=setupCharacterCreator({
+  actor:previewActor,
+  onConfirm:profile=>{
+    currentCharacter=profile;
+    applyCharacterAppearance(hero,profile);
+    $('#player-name').textContent=profile.name.toUpperCase();
+    if(creatorFlow.startAfter)startGame(creatorFlow.fresh);
+    else restoreCreatorOrigin();
+  },
+  onCancel:()=>restoreCreatorOrigin()
+});
+function openCreator({from='menu',startAfter=false,fresh=false}={}){
+  creatorFlow={from,startAfter,fresh};
+  if(state.started){save();state.paused=true;keys.clear();state.blocking=false;}
+  $('#menu').classList.add('hidden');
+  $('#pause-screen').classList.add('hidden');
+  $('#hud').classList.add('hidden');
+  creator.open(currentCharacter||DEFAULT_CHARACTER);
+}
 // Load the skinned, textured samurai and authored FBX motions, while retaining
 // the procedural meshes as an immediate, offline-safe fallback.
 document.body.dataset.samuraiVisual='loading';
 installRealisticSamurai([
   {actor:hero,role:'hero'},
+  {actor:previewActor,role:'hero'},
   {actor:mentor,role:'mentor'},
   ...bandits.map(e=>({actor:e.actor,role:'bandit'}))
 ]).then(count=>{
   const ready=count>0&&hero.rigged;
   document.body.dataset.samuraiVisual=ready?'ready':'fallback';
   $('#model-status').textContent=ready?'PERSONAGENS 3D · ANIMAÇÕES ATIVAS':'MODO CLÁSSICO · FALLBACK';
+  applyCharacterAppearance(hero,currentCharacter||DEFAULT_CHARACTER);
+  creator.refreshAppearance();
+  creator.setModelStatus(!!previewActor.rigged);
   if(ready&&state.started)toast('PERSONAGENS 3D DETALHADOS CARREGADOS','gold');
 }).catch(error=>{
   document.body.dataset.samuraiVisual='fallback';
   $('#model-status').textContent='MODO CLÁSSICO · FALLBACK';
+  applyCharacterAppearance(hero,currentCharacter||DEFAULT_CHARACTER);
+  creator.refreshAppearance();
+  creator.setModelStatus(false);
   console.warn('Samurai detalhado não carregou; usando modelos anteriores.',error);
 });
 const state={
@@ -333,6 +376,8 @@ function startGame(fresh=false){
   state.started=true;state.paused=false;state.dead=false;
   $('#menu').classList.add('hidden');$('#pause-screen').classList.add('hidden');$('#death-screen').classList.add('hidden');
   $('#hud').classList.remove('hidden');
+  applyCharacterAppearance(hero,currentCharacter||DEFAULT_CHARACTER);
+  $('#player-name').textContent=(currentCharacter||DEFAULT_CHARACTER).name.toUpperCase();
   updateQuest();updateHUD();toast('O DESTINO AGUARDA, RONIN.','gold');
 }
 function pauseGame() {
@@ -342,8 +387,13 @@ function pauseGame() {
   if(state.paused){keys.clear();state.blocking=false;save();}
 }
 function resumeGame(){state.paused=false;$('#pause-screen').classList.add('hidden');}
-$('#start-button').addEventListener('click',()=>startGame());
-$('#new-game-button').addEventListener('click',()=>startGame(true));
+$('#start-button').addEventListener('click',()=>{
+  if(currentCharacter)startGame();
+  else openCreator({startAfter:true});
+});
+$('#new-game-button').addEventListener('click',()=>openCreator({startAfter:true,fresh:true}));
+$('#customize-button').addEventListener('click',()=>openCreator());
+$('#pause-customize-button').addEventListener('click',()=>openCreator({from:'pause'}));
 $('#resume-button').addEventListener('click',resumeGame);
 $('#back-menu-button').addEventListener('click',()=>{
   save();state.paused=true;$('#pause-screen').classList.add('hidden');$('#menu').classList.remove('hidden');$('#hud').classList.add('hidden');
@@ -358,6 +408,10 @@ $('#sound-toggle').addEventListener('click',()=>{
   $('#sound-toggle').textContent=state.sound?'♪':'♩';
 });
 window.addEventListener('keydown',event=>{
+  if(creator.active){
+    if(event.code==='Escape'){event.preventDefault();creator.close();restoreCreatorOrigin();}
+    return;
+  }
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
   if(event.repeat && ['KeyE','KeyF','Space','KeyJ','KeyR'].includes(event.code))return;
   if(event.code==='Escape'){if(state.dialogue)closeDialogue();else pauseGame();return;}
@@ -571,6 +625,14 @@ function updateEnemy(e,dt) {
 }
 function tick(){
   const dt=Math.min(clock.getDelta(),.05);
+  if(creator.active){
+    creator.update(dt);
+    preview.stage.position.x=innerWidth>720?1.75:0;
+    preview.camera.aspect=innerWidth/innerHeight;
+    preview.camera.updateProjectionMatrix();
+    renderer.render(preview.scene,preview.camera);
+    return;
+  }
   const time=clock.elapsedTime;
   world.update(time,dt);
   const active=state.started&&!state.paused&&!state.dead&&!state.dialogue;
