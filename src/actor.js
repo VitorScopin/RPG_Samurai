@@ -84,6 +84,10 @@ export function createActor({type='hero',name='Ronin'}={}) {
   return {model,body,armL,armR,legL,legR,katana,type,name,isBoss,animTime:0};
 }
 export function animateActor(a,elapsed,speed,action='idle',hurt=false) {
+  if(a.rigged&&a.updateRig){
+    a.updateRig(elapsed,speed,action,hurt);
+    return;
+  }
   a.animTime += elapsed;
   const walk=Math.min(speed/5.5,1);
   const phase=a.animTime*(6.8+walk*5.7);
