@@ -139,13 +139,14 @@ export function createCharacterPreviewScene(){
   key.shadow.camera.left=-5;key.shadow.camera.right=5;key.shadow.camera.top=5;key.shadow.camera.bottom=-5;
   scene.add(key);
   const rim=new THREE.PointLight(0x5b8eab,50,12,2);rim.position.set(-2,3,-2);scene.add(rim);
+  const stage=new THREE.Group();scene.add(stage);
   const floor=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.2,.24,56),material('#303b3b',.32));
-  floor.position.y=-.17;floor.receiveShadow=true;scene.add(floor);
+  floor.position.y=-.17;floor.receiveShadow=true;stage.add(floor);
   const ring=new THREE.Mesh(new THREE.TorusGeometry(1.93,.018,5,80),new THREE.MeshBasicMaterial({color:0xbf9871}));
-  ring.rotation.x=-Math.PI/2;ring.position.y=-.027;scene.add(ring);
+  ring.rotation.x=-Math.PI/2;ring.position.y=-.027;stage.add(ring);
   const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.1,40),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.32,depthWrite:false}));
-  shadow.rotation.x=-Math.PI/2;shadow.position.y=-.02;scene.add(shadow);
+  shadow.rotation.x=-Math.PI/2;shadow.position.y=-.02;stage.add(shadow);
   const camera=new THREE.PerspectiveCamera(38,1,.1,100);
   camera.position.set(0,2.85,7.7);camera.lookAt(0,1.4,0);
-  return {scene,camera};
+  return {scene,camera,stage};
 }
