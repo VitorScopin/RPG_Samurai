@@ -788,6 +788,35 @@ renderer.setAnimationLoop(tick);
 camera.position.set(0,8,24);camera.lookAt(0,1,5);
 mapDraw();
 if(import.meta.env.DEV){
+  // Development-only, side-effect-free attack probe used by Chromium CI.
+  window.__kageEnemyAttackProbe=index=>{
+    const e=bandits[index];
+    if(!e)return null;
+    const playerPosition=hero.model.position.clone();
+    const enemyPosition=e.actor.model.position.clone();
+    const oldRotation=e.actor.model.rotation.y;
+    const saved={cooldown:e.cooldown,stun:e.stun,attackTime:e.attackTime,
+      windupRemaining:e.windupRemaining,pendingHit:e.pendingHit,
+      dodgeTime:e.dodgeTime,notice:e.notice,strafe:e.strafe};
+    let result;
+    try{
+      hero.model.position.set(enemyPosition.x,0,enemyPosition.z+e.config.range-.8);
+      e.cooldown=0;e.stun=0;e.attackTime=0;e.windupRemaining=0;
+      e.pendingHit=false;e.dodgeTime=0;e.notice=true;
+      updateEnemy(e,.016);
+      result={
+        id:e.archetype,pending:e.pendingHit,windup:e.windupRemaining,
+        animation:e.config.animation,damage:e.config.damage,
+        cooldown:e.cooldown
+      };
+    }finally{
+      hero.model.position.copy(playerPosition);
+      e.actor.model.position.copy(enemyPosition);
+      e.actor.model.rotation.y=oldRotation;
+      Object.assign(e,saved);
+    }
+    return result;
+  };
   window.__kageEnemies=()=>bandits.map(e=>{
     const detailed=e.actor.model.getObjectByName('DetailedSamurai');
     const source=detailed?.children[0];
