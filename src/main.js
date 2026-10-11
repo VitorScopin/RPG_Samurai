@@ -101,6 +101,8 @@ const clock=new THREE.Clock();
 const camTarget=new THREE.Vector3(0,2,0);
 const camDesired=new THREE.Vector3(0,8,13);
 const camLook=new THREE.Vector3(0,1.6,0);
+const cameraRaycaster=new THREE.Raycaster();
+const cameraDirection=new THREE.Vector3();
 let dragging=false,mouseX=0,mouseY=0;
 const particles=[];
 function makeSound(freq=250,duration=.1,kind='triangle',volume=.04){
@@ -608,14 +610,37 @@ function tick(){
       state.yaw+=diff*Math.min(dt*3,1);
     }
   }
+  recoverPose();
   const p=hero.model.position;
-  const angle=state.yaw,zoom=state.zoom;
-  camDesired.set(p.x+Math.sin(angle)*zoom,5.3+zoom*.22+state.pitch*4,p.z+Math.cos(angle)*zoom);
+  const angle=Number.isFinite(state.yaw)?state.yaw:0;
+  const zoom=Number.isFinite(state.zoom)?clamp(state.zoom,6,15):10;
+  const pitch=Number.isFinite(state.pitch)?clamp(state.pitch,-.20,.65):.26;
   const follow=1-Math.exp(-dt*5.5);
-  camera.position.lerp(camDesired,follow);
-  camTarget.set(p.x,1.6,p.z);
+  camTarget.set(p.x,1.7,p.z);
   camLook.lerp(camTarget,follow);
+  camDesired.set(p.x+Math.sin(angle)*zoom,5.3+zoom*.22+pitch*4,p.z+Math.cos(angle)*zoom);
+  // Keep the third-person camera in front of houses/roofs rather than inside
+  // their solid meshes, where players see a flat gray/black surface.
+  cameraDirection.copy(camDesired).sub(camLook);
+  const distanceToDesired=cameraDirection.length();
+  let obstructed=false;
+  if(distanceToDesired>1e-4){
+    cameraDirection.divideScalar(distanceToDesired);
+    cameraRaycaster.set(camLook,cameraDirection);
+    cameraRaycaster.near=.35;
+    cameraRaycaster.far=distanceToDesired;
+    const hit=cameraRaycaster.intersectObjects(world.cameraObstacles,false)[0];
+    if(hit){
+      camDesired.copy(camLook).addScaledVector(cameraDirection,Math.max(.7,hit.distance-.55));
+      obstructed=true;
+    }
+  }
+  if(obstructed)camera.position.copy(camDesired);
+  else camera.position.lerp(camDesired,follow);
   if(state.screenShake>0){camera.position.x+=(Math.random()-.5)*state.screenShake*.7;camera.position.y+=(Math.random()-.5)*state.screenShake*.4;}
+  if(!Number.isFinite(camera.position.x)||!Number.isFinite(camera.position.y)||!Number.isFinite(camera.position.z)){
+    camera.position.copy(camDesired);
+  }
   camera.lookAt(camLook);
   renderer.render(scene,camera);
 }
