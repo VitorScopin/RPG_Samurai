@@ -28,6 +28,31 @@ try{
   console.log('Character status:',status);
   assert.equal(status,'ready','Realistic model and animations should load');
   await page.locator('#start-button').click();
+  assert(await page.locator('#creator').isVisible(),'First launch must open the creator');
+  assert.equal(await page.locator('[data-preset]').count(),6,'Six preset choices available');
+  await page.locator('#character-name').fill('Takeda');
+  await page.locator('[data-preset="crimson"]').click();
+  await page.locator('[data-headwear="hat"]').click();
+  await page.locator('[data-color-type="armor"][data-hex="#354c3d"]').click();
+  await page.waitForTimeout(280);
+  const previewState=await page.evaluate(()=>({
+    visible:!document.querySelector('#creator').classList.contains('hidden'),
+    title:document.querySelector('#preview-name').textContent,
+    preset:document.querySelector('#preview-class').textContent,
+    model:document.querySelector('#creator-model-status').textContent
+  }));
+  console.log('CHARACTER PREVIEW',JSON.stringify(previewState));
+  assert.equal(previewState.title,'TAKEDA');
+  assert(previewState.model.includes('DETALHADO'),'Preview should use rigged detailed model');
+  await page.locator('#creator-confirm').click();
+  assert(await page.locator('#hud').isVisible(),'Confirm should start RPG');
+  const savedProfile=await page.evaluate(()=>JSON.parse(localStorage.getItem('kage-no-michi-character-v1')));
+  console.log('SAVED CHARACTER',JSON.stringify(savedProfile));
+  assert.equal(savedProfile.name,'Takeda');
+  assert.equal(savedProfile.preset,'crimson');
+  assert.equal(savedProfile.headwear,'hat');
+  assert.equal(savedProfile.armor,'#354c3d');
+  assert.equal(await page.locator('#player-name').textContent(),'TAKEDA');
   async function snapshot(label){
     const buffer=await page.screenshot();
     const image=buffer.toString('base64');
