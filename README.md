@@ -31,6 +31,35 @@ Abra o endereço indicado pelo Vite (normalmente http://localhost:5173). Para ge
 
 Há controles táteis em telas menores.
 
+## Três inimigos animados (nova fase)
+
+A estrada agora reúne **três classes de oponentes** com armas, armaduras,
+silhuetas, vida, animações e táticas próprias. A missão inicial do Mestre Hideo
+pede derrotar um de cada tipo.
+
+| Inimigo | Modelo e arma | Comportamento |
+| --- | --- | --- |
+| **Shinobi das Sombras** | Capuz/máscara, tecidos escuros e duas lâminas curtas | Ágil, circula o jogador, ataques rápidos e animação de esquiva ao sofrer dano |
+| **Lanceiro Ashigaru** | Jingasa de palha, couraça militar e lança yari | Mantém a distância e usa estocadas mais longas, com aviso antes de atingir |
+| **Ronin Corrompido** | Kabuto com chifres, armadura pesada e odachi | Lento, resistente, absorve parte do dano e desfere golpes fortes |
+
+Os três usam **modelos 3D distintos por equipagem modular**: base
+humanoide licenciada comum, mas geometria e materiais de equipamentos
+individuais ligados aos ossos do esqueleto FBX. As animações originais
+(Mixamo) de caminhada, corrida, ataques, golpes pesados e esquiva são
+reproduzidas via `THREE.AnimationMixer` e acompanham armas e armaduras.
+**Não são três modelos humanos inteiramente independentes importados**;
+novas malhas de corpo podem ser integradas em etapa futura.
+
+A resolução do golpe é feita no tempo do jogo, não em `setTimeout`:
+pausar/conversar suspende o dano, e acertar o inimigo durante a preparação
+pode cancelar o ataque. Sem os arquivos FBX, três aparências procedurais
+distintas continuam disponíveis para permitir jogar offline.
+
+- Parâmetros de atributos e comportamento: `src/enemyArchetypes.js`
+- Animações e anexos de esqueleto: `src/realisticSamurai.js`
+- Combate, IA e integração de missões: `src/main.js`
+
 ## Criador de personagem (presets)
 
 Na primeira vez em que clicar em **INICIAR JORNADA**, você entrará no
