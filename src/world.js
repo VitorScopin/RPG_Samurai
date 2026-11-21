@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createTerrainMaterials, installEnvironmentalDetails } from './environmentVisuals.js';
 
 const C = {
   ground: 0x355249, grass: 0x47634e, grassLight: 0x637453,
@@ -84,16 +85,40 @@ function pine(scene,x,z,s=1){
     crown.rotation.y=i*.23;
   }
 }
+const blossomMaterials=C.blossom.map(color=>new THREE.MeshStandardMaterial({color,roughness:.92,side:THREE.DoubleSide}));
+const sakuraCrownGeometry=new THREE.IcosahedronGeometry(1,1);
 function sakura(scene,x,z,s=1) {
   const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);scene.add(g);
-  cylinder(g,mats.bark,0,2.6,0,.34,5.2);
-  for (const side of [-1,1]) {
-    const limb=cylinder(g,mats.bark,side*1.05,4.6,0,.19,2.8);
-    limb.rotation.z=side*.67;
+  // Separate curved branches and smaller leaf clusters avoid the old
+  // overlapping balloon-shaped canopy. Clusters are instanced per tree.
+  const trunk=mesh(new THREE.CylinderGeometry(.22,.42,5.5,10),mats.bark,g,0,2.74,0);
+  trunk.rotation.z=.045;
+  const branchGeometry=new THREE.CylinderGeometry(.07,.19,3.3,7);
+  for(let i=0;i<7;i++){
+    const angle=i*Math.PI*2/7;
+    const branch=new THREE.Mesh(branchGeometry,mats.bark);
+    branch.position.set(Math.cos(angle)*.82,4.65,Math.sin(angle)*.82);
+    branch.rotation.z=Math.cos(angle)*-.52;
+    branch.rotation.x=Math.sin(angle)*.52;
+    branch.castShadow=true;branch.receiveShadow=true;g.add(branch);
   }
-  for(let i=0;i<12;i++){
-    const a=i*2.4,r=i<4?1.25:2.1;
-    sphere(g,new THREE.MeshStandardMaterial({color:C.blossom[i%4],roughness:1}),Math.cos(a)*r,5.45+random(-.5,.95),Math.sin(a)*r,random(1.05,1.65),random(.85,1.3),random(1,1.5));
+  const randomLocal=()=>rnd();
+  const dummy=new THREE.Object3D();
+  for(let palette=0;palette<blossomMaterials.length;palette++){
+    const count=11;
+    const blossoms=new THREE.InstancedMesh(sakuraCrownGeometry,blossomMaterials[palette],count);
+    for(let i=0;i<count;i++){
+      const a=randomLocal()*Math.PI*2,spread=Math.sqrt(randomLocal())*2.95;
+      const height=4.8+randomLocal()*2.15;
+      dummy.position.set(Math.cos(a)*spread,height,Math.sin(a)*spread);
+      dummy.rotation.set(randomLocal()*.5,randomLocal()*Math.PI,randomLocal()*.4);
+      const size=.46+randomLocal()*.42;
+      dummy.scale.set(size*1.3,size*.80,size*1.15);
+      dummy.updateMatrix();blossoms.setMatrixAt(i,dummy.matrix);
+    }
+    blossoms.instanceMatrix.needsUpdate=true;
+    blossoms.castShadow=true;blossoms.receiveShadow=true;
+    blossoms.frustumCulled=false;g.add(blossoms);
   }
 }
 function rock(scene,x,z,s=1) {
@@ -121,14 +146,21 @@ export function createWorld(scene) {
   seed=49127;
   const solids=[];
   const cameraObstacles=[];
-  scene.background=new THREE.Color(0x9aa8a8);
-  scene.fog=new THREE.FogExp2(0x98a8a6,.0115);
-  const hemi=new THREE.HemisphereLight(0xd7e5e6,0x3b493e,2.05);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffd8a2,2.7);
-  sun.position.set(-40,80,-60);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-  sun.shadow.camera.left=-86;sun.shadow.camera.right=86;sun.shadow.camera.top=86;sun.shadow.camera.bottom=-86;
-  sun.shadow.normalBias=.02;sun.shadow.bias=-.00015;scene.add(sun);
-  const ground=mesh(new THREE.PlaneGeometry(240,240),mats.ground,scene,0,-.1,0);
+  // Late-afternoon light with distance haze: preserves sightlines for combat.
+  scene.background=new THREE.Color(0xa2ac9f);
+  scene.fog=new THREE.FogExp2(0xa2ac9f,.0088);
+  const hemi=new THREE.HemisphereLight(0xffe8cf,0x384e42,1.65);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffc795,3.05);
+  sun.position.set(-52,88,-37);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.left=-82;sun.shadow.camera.right=82;sun.shadow.camera.top=82;sun.shadow.camera.bottom=-82;
+  sun.shadow.camera.near=1;sun.shadow.camera.far=225;
+  sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;
+  sun.shadow.radius=2.2;scene.add(sun);
+  const ambientFill=new THREE.DirectionalLight(0xb2c6d4,.45);
+  ambientFill.position.set(35,28,45);scene.add(ambientFill);
+  const terrainMats=createTerrainMaterials();
+  mats.path=terrainMats.path;
+  const ground=mesh(new THREE.PlaneGeometry(240,240),terrainMats.ground,scene,0,-.1,0);
   ground.rotation.x=-Math.PI/2;ground.castShadow=false;
   // Distant silhouettes provide depth without downloaded models.
   const mountainMat=new THREE.MeshStandardMaterial({color:0x58716c,roughness:1,flatShading:true});
@@ -138,8 +170,10 @@ export function createWorld(scene) {
     const m=mesh(new THREE.ConeGeometry(random(15,30),h,5),i%3?mountainMat:peakMat,scene,Math.cos(a)*r,h*.32-.2,Math.sin(a)*r);
     m.rotation.y=random(0,3);
   }
-  route(scene,[[0,17],[0,7],[0,-6],[3,-14],[7,-23],[9,-37],[11,-49]],3.5);
-  route(scene,[[0,4],[-8,2],[-15,-5]],2.55);
+  const mainTrail=[[0,17],[0,7],[0,-6],[3,-14],[7,-23],[9,-37],[11,-49]];
+  const sideTrail=[[0,4],[-8,2],[-15,-5]];
+  route(scene,mainTrail,3.5);
+  route(scene,sideTrail,2.55);
   // Main village.
   for(const [x,z,rot,s] of [[-10,10,.18,.95],[11,9,-.14,1],[12,-2,.5,.74],[-12,-1,-.35,.82]]) {
     const building=house(scene,x,z,rot,s);
@@ -186,6 +220,17 @@ export function createWorld(scene) {
       tuft.rotation.z=random(-.5,.5);
     }
   }
+  // Instancing adds over two thousand detailed pieces with a few draw calls.
+  // Placement avoids paths, buildings, hero spawn, the pond and the shrine.
+  const exclusions=[
+    {x:0,z:13,r:6},{x:2,z:8,r:5},{x:12,z:-46,r:6},
+    {x:-25,z:-21,r:11},
+    ...[[-10,10,5],[11,9,5],[12,-2,4],[-12,-1,4]].map(([x,z,r])=>({x,z,r}))
+  ];
+  const environmentDetails=installEnvironmentalDetails(scene,{
+    trail:mainTrail,
+    exclusions
+  });
   const petals=[];
   const petalMat=new THREE.MeshBasicMaterial({color:0xf4b6c2,side:THREE.DoubleSide,transparent:true,opacity:.72,depthWrite:false});
   for(let i=0;i<75;i++) {
@@ -196,6 +241,7 @@ export function createWorld(scene) {
   const boundary=68;
   return {
     solids,cameraObstacles,boundary,
+    environmentDetails,
     mentor:{x:2,z:8},
     enemies:[{x:-7,z:-17},{x:13,z:-21},{x:-8,z:-38}],
     boss:{x:11,z:-55},
