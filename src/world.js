@@ -85,16 +85,40 @@ function pine(scene,x,z,s=1){
     crown.rotation.y=i*.23;
   }
 }
+const blossomMaterials=C.blossom.map(color=>new THREE.MeshStandardMaterial({color,roughness:.92,side:THREE.DoubleSide}));
+const sakuraCrownGeometry=new THREE.IcosahedronGeometry(1,1);
 function sakura(scene,x,z,s=1) {
   const g=new THREE.Group();g.position.set(x,0,z);g.scale.setScalar(s);scene.add(g);
-  cylinder(g,mats.bark,0,2.6,0,.34,5.2);
-  for (const side of [-1,1]) {
-    const limb=cylinder(g,mats.bark,side*1.05,4.6,0,.19,2.8);
-    limb.rotation.z=side*.67;
+  // Separate curved branches and smaller leaf clusters avoid the old
+  // overlapping balloon-shaped canopy. Clusters are instanced per tree.
+  const trunk=mesh(new THREE.CylinderGeometry(.22,.42,5.5,10),mats.bark,g,0,2.74,0);
+  trunk.rotation.z=.045;
+  const branchGeometry=new THREE.CylinderGeometry(.07,.19,3.3,7);
+  for(let i=0;i<7;i++){
+    const angle=i*Math.PI*2/7;
+    const branch=new THREE.Mesh(branchGeometry,mats.bark);
+    branch.position.set(Math.cos(angle)*.82,4.65,Math.sin(angle)*.82);
+    branch.rotation.z=Math.cos(angle)*-.52;
+    branch.rotation.x=Math.sin(angle)*.52;
+    branch.castShadow=true;branch.receiveShadow=true;g.add(branch);
   }
-  for(let i=0;i<12;i++){
-    const a=i*2.4,r=i<4?1.25:2.1;
-    sphere(g,new THREE.MeshStandardMaterial({color:C.blossom[i%4],roughness:1}),Math.cos(a)*r,5.45+random(-.5,.95),Math.sin(a)*r,random(1.05,1.65),random(.85,1.3),random(1,1.5));
+  const randomLocal=()=>rnd();
+  const dummy=new THREE.Object3D();
+  for(let palette=0;palette<blossomMaterials.length;palette++){
+    const count=11;
+    const blossoms=new THREE.InstancedMesh(sakuraCrownGeometry,blossomMaterials[palette],count);
+    for(let i=0;i<count;i++){
+      const a=randomLocal()*Math.PI*2,spread=Math.sqrt(randomLocal())*2.95;
+      const height=4.8+randomLocal()*2.15;
+      dummy.position.set(Math.cos(a)*spread,height,Math.sin(a)*spread);
+      dummy.rotation.set(randomLocal()*.5,randomLocal()*Math.PI,randomLocal()*.4);
+      const size=.46+randomLocal()*.42;
+      dummy.scale.set(size*1.3,size*.80,size*1.15);
+      dummy.updateMatrix();blossoms.setMatrixAt(i,dummy.matrix);
+    }
+    blossoms.instanceMatrix.needsUpdate=true;
+    blossoms.castShadow=true;blossoms.receiveShadow=true;
+    blossoms.frustumCulled=false;g.add(blossoms);
   }
 }
 function rock(scene,x,z,s=1) {
