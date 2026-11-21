@@ -19,6 +19,7 @@ const FILES=[
   ['ronin.fbx','models/tpose.fbx',21783500],
   // Authored weapon geometry and PBR maps, from the same licensed rig source.
   ['weapons/sword.glb','models/weapons/sword.glb',4745912],
+  ['attachments/Scabbard.glb','models/attachements/Scabbard.glb',4741640],
   ['materials.glb','models/textures.glb',24499980],
   ['Idle.fbx','animations/Idle.fbx',287552],
   ['Walk.fbx','animations/Walk.fbx',200464],
