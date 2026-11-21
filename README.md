@@ -123,6 +123,38 @@ npm run assets
 O modelo é do artista dark_igorek (licença CC BY 4.0) e as animações vêm
 do pacote Mixamo usado pelo template SamuraiThirdPersonTemplateThreeJS.
 
+## Atualização visual — Vale das Cerejeiras
+
+Esta etapa melhora o mapa 3D diretamente em `src/world.js`:
+
+- **Solo de floresta e trilhas texturizadas:** materiais de aparência orgânica gerados
+  uma vez por `CanvasTexture`, com ruído multiescala e fragmentos de folhas.
+  Funcionam offline, sem carregar imagens externas durante o jogo.
+- **Vegetação e pedras densas:** aproximadamente 1.900 tufos de grama,
+  190 pedras e 220 flores com `THREE.InstancedMesh` (poucos draw calls).
+  `src/environmentLayout.js` distribui as peças de forma determinística
+  sem bloquear a trilha principal, o spawn, as construções ou a lagoa.
+- **Cerejeiras detalhadas:** galhos separados e mais de 40 pequenos grupos
+  de flores por árvore, também instanciados.
+- **Luz cinematográfica:** pôr do sol quente, preenchimento azul frio e
+  névoa leve para dar profundidade ao terreno.
+
+O mapa mantém o mesmo posicionamento de inimigos, missão, aldeia, santuário
+e colisões. O protótipo continua estilizado: estes ajustes não são
+fotogrametria nem visuais AAA.
+
+### Recursos externos selecionados para próximas melhorias
+
+Foi verificada a licença CC0 de **Poly Haven** e **ambientCG**. Para uma
+próxima fase com downloads PBR reais, as opções selecionadas são:
+
+- [Forest Ground 05](https://polyhaven.com/a/forest_ground_05) — terra e folhas;
+- [Autumn Forest 01](https://polyhaven.com/a/autumn_forest_01) — HDRI florestal;
+- [ambientCG](https://ambientcg.com/) — pedras, madeira e materiais PBR.
+
+**Esses assets externos ainda não foram incorporados** nesta etapa; o novo
+material procedural offline evita arquivos pesados e dependências de rede.
+
 ## Conteúdo do protótipo
 
 - Cenário procedural com vilarejo, torii, templos, bambus, cerejeiras, névoa, montanhas e iluminação atmosférica.
