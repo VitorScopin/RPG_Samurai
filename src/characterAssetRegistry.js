@@ -4,6 +4,13 @@
 const REVISION='496862cda55bfba3be6d02eec5aee3ca808a31a3';
 const BASE='https://raw.githubusercontent.com/achrefelouafi/SamuraiThirdPersonTemplateThreeJS/'+REVISION+'/public/models/';
 export const MODEL_FILES=Object.freeze({
+  scabbard:Object.freeze({
+    id:'scabbard',
+    file:'attachments/Scabbard.glb',
+    bytes:4741640,
+    source:BASE+'attachements/Scabbard.glb',
+    credit:'SamuraiThirdPersonTemplateThreeJS authored scabbard GLB'
+  }),
   katana:Object.freeze({
     id:'katana',
     file:'weapons/sword.glb',
