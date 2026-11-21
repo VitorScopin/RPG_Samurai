@@ -46,3 +46,10 @@ download de FBX / materiais / animações não possa ser realizado.
 - O arquivo é baixado durante `npm run assets`; não está embutido no repositório.
 
 Outros modelos de personagens encontrados online (Sketchfab etc.) **não** foram adicionados sem verificar rig, formato e licença. Para personagens completamente distintos, a próxima etapa exigirá modelos licenciados e testes de retargeting.
+
+## Bainha do samurai — novo asset GLB
+
+- Arquivo: `public/character/attachments/Scabbard.glb` (4.741.640 bytes).
+- Origem: https://github.com/achrefelouafi/SamuraiThirdPersonTemplateThreeJS/blob/496862cda55bfba3be6d02eec5aee3ca808a31a3/public/models/attachements/Scabbard.glb
+- Material de origem: mesmo pacote de personagem e armamento creditado acima.
+- Montagem: normalização e vínculo ao osso `Hips`, evitando que a bainha fique fixa no mundo.
