@@ -13,6 +13,7 @@ import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { decorateEnemyRig, ENEMY_ARCHETYPES } from './enemyArchetypes.js';
+import { selectEquipment } from './characterAssetRegistry.js';
 
 const DIRECTORY='/character/';
 const ANIMATION_PATHS={
@@ -98,10 +99,11 @@ function materialsFromGltf(gltf){
 async function prepareAsset(){
   const loader=new FBXLoader();
   const motionNames=Object.keys(ANIMATION_PATHS);
-  const [rig,motionResults,glbResult]=await Promise.all([
+  const [rig,motionResults,glbResult,weaponResult]=await Promise.all([
     loader.loadAsync(DIRECTORY+'ronin.fbx'),
     Promise.allSettled(motionNames.map(key=>loader.loadAsync(DIRECTORY+ANIMATION_PATHS[key]))),
-    new GLTFLoader().loadAsync(DIRECTORY+'materials.glb').catch(()=>null)
+    new GLTFLoader().loadAsync(DIRECTORY+'materials.glb').catch(()=>null),
+    new GLTFLoader().loadAsync(DIRECTORY+'weapons/sword.glb').catch(()=>null)
   ]);
   const bodyBones=indexRigBones(rig);
   if(!bodyBones.has('hips')||!bodyBones.has('righthand'))throw new Error('Arquivo FBX sem o esqueleto humanoide esperado.');
@@ -137,7 +139,7 @@ async function prepareAsset(){
     };
     node.material=Array.isArray(node.material)?node.material.map(convert):convert(node.material);
   });
-  return {rig,clips};
+  return {rig,clips,weapon:weaponResult?.scene||null};
 }
 function getAsset(){
   if(!reusable.promise)reusable.promise=prepareAsset();
@@ -175,7 +177,44 @@ function swordModel(){
   end.position.y=-.31;g.add(end);
   return g;
 }
-function mountSword(rig,bones,rootScale){
+function authoredSword(source){
+  if(!source)return null;
+  const g=source.clone(true);
+  g.name='KatanaImportedGLB';
+  g.traverse(node=>{
+    if(!node.isMesh)return;
+    node.castShadow=true;node.receiveShadow=true;
+    // Preserve imported metallic/normal/roughness maps exactly as authored.
+    const materials=Array.isArray(node.material)?node.material:[node.material];
+    for(const material of materials){
+      if(material?.map)material.map.colorSpace=THREE.SRGBColorSpace;
+      if(material)material.side=THREE.FrontSide;
+    }
+  });
+  g.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(g);
+  const size=bounds.getSize(new THREE.Vector3());
+  const axis=size.x>=size.y&&size.x>=size.z?'x':size.z>=size.y?'z':'y';
+  const align=new THREE.Group();
+  if(axis==='x')g.rotation.z=Math.PI/2;
+  if(axis==='z')g.rotation.x=-Math.PI/2;
+  align.add(g);
+  align.updateMatrixWorld(true);
+  bounds.setFromObject(align);
+  const height=bounds.max.y-bounds.min.y;
+  if(!Number.isFinite(height)||height<1e-4)return null;
+  align.scale.setScalar(1.42/height);
+  align.updateMatrixWorld(true);
+  const scaledBounds=new THREE.Box3().setFromObject(align);
+  const center=scaledBounds.getCenter(new THREE.Vector3());
+  const swordRoot=new THREE.Group();
+  align.position.set(-center.x,0,-center.z);
+  align.position.y=-.31-scaledBounds.min.y;
+  swordRoot.add(align);
+  return swordRoot;
+}
+function mountSword(rig,bones,rootScale,asset,role){
+
   const hand=bones.get('righthand');
   if(!hand)return;
   // Keep weapon dimensions in world metres despite the source rig being in cm.
@@ -185,7 +224,10 @@ function mountSword(rig,bones,rootScale){
   hand.getWorldScale(worldScale);
   mount.scale.set(1/Math.max(1e-6,worldScale.x),1/Math.max(1e-6,worldScale.y),1/Math.max(1e-6,worldScale.z));
   mount.rotation.set(.08,0,-.3);
-  mount.add(swordModel());
+  // Enemy roles retain their individual skeletal weapon decorators.
+  const imported=selectEquipment(role).weapon==='katana'?authoredSword(asset.weapon):null;
+  mount.add(imported||swordModel());
+  mount.userData.source=imported?'authored-glb':'procedural-fallback';
   hand.add(mount);
 }
 function makeRig(asset,actor,{role='hero'}={}){
@@ -229,7 +271,7 @@ function makeRig(asset,actor,{role='hero'}={}){
     node.material=Array.isArray(node.material)?node.material.map(recolor):recolor(node.material);
     node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;
   });
-  mountSword(fbx,bones,fbx.scale.x);
+  mountSword(fbx,bones,fbx.scale.x,asset,role);
   // Three materially distinct enemy armor/weapon meshes follow the actual
   // Mixamo bones; NPCs therefore animate instead of moving as static statues.
   if(ENEMY_ARCHETYPES[role])decorateEnemyRig(fbx,bones,role);
