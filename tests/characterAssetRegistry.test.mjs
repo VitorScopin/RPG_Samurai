@@ -5,6 +5,8 @@ import { MODEL_FILES, selectEquipment, isAllowedAssetName } from '../src/charact
 test('premium sword is an authored glb with pinned verified source',()=>{
   assert.equal(MODEL_FILES.katana.file,'weapons/sword.glb');
   assert.equal(MODEL_FILES.katana.bytes,4745912);
+  assert.equal(MODEL_FILES.scabbard.file,'attachments/Scabbard.glb');
+  assert.equal(MODEL_FILES.scabbard.bytes,4741640);
   assert(MODEL_FILES.katana.source.includes('/496862cda55bfba3be6d02eec5aee3ca808a31a3/'));
 });
 test('equipment changes are role aware and do not alter enemy weapon ownership',()=>{
