@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createTerrainMaterials, installEnvironmentalDetails } from './environmentVisuals.js';
 
 const C = {
   ground: 0x355249, grass: 0x47634e, grassLight: 0x637453,
@@ -121,14 +122,21 @@ export function createWorld(scene) {
   seed=49127;
   const solids=[];
   const cameraObstacles=[];
-  scene.background=new THREE.Color(0x9aa8a8);
-  scene.fog=new THREE.FogExp2(0x98a8a6,.0115);
-  const hemi=new THREE.HemisphereLight(0xd7e5e6,0x3b493e,2.05);scene.add(hemi);
-  const sun=new THREE.DirectionalLight(0xffd8a2,2.7);
-  sun.position.set(-40,80,-60);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
-  sun.shadow.camera.left=-86;sun.shadow.camera.right=86;sun.shadow.camera.top=86;sun.shadow.camera.bottom=-86;
-  sun.shadow.normalBias=.02;sun.shadow.bias=-.00015;scene.add(sun);
-  const ground=mesh(new THREE.PlaneGeometry(240,240),mats.ground,scene,0,-.1,0);
+  // Late-afternoon light with distance haze: preserves sightlines for combat.
+  scene.background=new THREE.Color(0xa2ac9f);
+  scene.fog=new THREE.FogExp2(0xa2ac9f,.0088);
+  const hemi=new THREE.HemisphereLight(0xffe8cf,0x384e42,1.65);scene.add(hemi);
+  const sun=new THREE.DirectionalLight(0xffc795,3.05);
+  sun.position.set(-52,88,-37);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.camera.left=-82;sun.shadow.camera.right=82;sun.shadow.camera.top=82;sun.shadow.camera.bottom=-82;
+  sun.shadow.camera.near=1;sun.shadow.camera.far=225;
+  sun.shadow.normalBias=.035;sun.shadow.bias=-.00015;
+  sun.shadow.radius=2.2;scene.add(sun);
+  const ambientFill=new THREE.DirectionalLight(0xb2c6d4,.45);
+  ambientFill.position.set(35,28,45);scene.add(ambientFill);
+  const terrainMats=createTerrainMaterials();
+  mats.path=terrainMats.path;
+  const ground=mesh(new THREE.PlaneGeometry(240,240),terrainMats.ground,scene,0,-.1,0);
   ground.rotation.x=-Math.PI/2;ground.castShadow=false;
   // Distant silhouettes provide depth without downloaded models.
   const mountainMat=new THREE.MeshStandardMaterial({color:0x58716c,roughness:1,flatShading:true});
@@ -138,8 +146,10 @@ export function createWorld(scene) {
     const m=mesh(new THREE.ConeGeometry(random(15,30),h,5),i%3?mountainMat:peakMat,scene,Math.cos(a)*r,h*.32-.2,Math.sin(a)*r);
     m.rotation.y=random(0,3);
   }
-  route(scene,[[0,17],[0,7],[0,-6],[3,-14],[7,-23],[9,-37],[11,-49]],3.5);
-  route(scene,[[0,4],[-8,2],[-15,-5]],2.55);
+  const mainTrail=[[0,17],[0,7],[0,-6],[3,-14],[7,-23],[9,-37],[11,-49]];
+  const sideTrail=[[0,4],[-8,2],[-15,-5]];
+  route(scene,mainTrail,3.5);
+  route(scene,sideTrail,2.55);
   // Main village.
   for(const [x,z,rot,s] of [[-10,10,.18,.95],[11,9,-.14,1],[12,-2,.5,.74],[-12,-1,-.35,.82]]) {
     const building=house(scene,x,z,rot,s);
@@ -186,6 +196,17 @@ export function createWorld(scene) {
       tuft.rotation.z=random(-.5,.5);
     }
   }
+  // Instancing adds over two thousand detailed pieces with a few draw calls.
+  // Placement avoids paths, buildings, hero spawn, the pond and the shrine.
+  const exclusions=[
+    {x:0,z:13,r:6},{x:2,z:8,r:5},{x:12,z:-46,r:6},
+    {x:-25,z:-21,r:11},
+    ...[[-10,10,5],[11,9,5],[12,-2,4],[-12,-1,4]].map(([x,z,r])=>({x,z,r}))
+  ];
+  const environmentDetails=installEnvironmentalDetails(scene,{
+    trail:mainTrail,
+    exclusions
+  });
   const petals=[];
   const petalMat=new THREE.MeshBasicMaterial({color:0xf4b6c2,side:THREE.DoubleSide,transparent:true,opacity:.72,depthWrite:false});
   for(let i=0;i<75;i++) {
@@ -196,6 +217,7 @@ export function createWorld(scene) {
   const boundary=68;
   return {
     solids,cameraObstacles,boundary,
+    environmentDetails,
     mentor:{x:2,z:8},
     enemies:[{x:-7,z:-17},{x:13,z:-21},{x:-8,z:-38}],
     boss:{x:11,z:-55},
