@@ -5,6 +5,7 @@ import { installRealisticSamurai } from './realisticSamurai.js';
 import { createCharacterPreviewScene, loadCharacter, DEFAULT_CHARACTER, applyCharacterAppearance } from './characterCustomization.js';
 import { setupCharacterCreator } from './creatorUI.js';
 import { ENEMY_ORDER,archetypeFor,decorateFallbackEnemy } from './enemyArchetypes.js';
+import { selectLockTarget, targetHeading } from './targetLock.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -296,7 +297,15 @@ function attack(){
   state.attackAnim=hero.rigged?.72:.30;
   state.attackHitDelay=hero.rigged?.24:.12;
   state.attackHitPending=true;
-  state.blocking=false;state.locked=false;
+  state.blocking=false;
+  // Keep lock-on enabled through combos and aim each strike at the nearest target.
+  if(state.locked){
+    const target=selectLockTarget(enemies,hero.model.position);
+    if(target){
+      hero.model.rotation.y=targetHeading(hero.model.position,target.actor.model.position);
+      safePose.heading=hero.model.rotation.y;
+    }
+  }
   makeSound(630,.13,'sawtooth',.022);
 }
 function performHit(){
@@ -742,10 +751,9 @@ function tick(){
     if(p.life<=0){scene.remove(p.o);p.o.geometry.dispose();p.mat.dispose();particles.splice(i,1);}
   });
   if(state.locked&&active){
-    const target=enemies.filter(e=>!e.dead&&e.actor.model.visible).sort((a,b)=>dist(a.actor.model.position,hero.model.position)-dist(b.actor.model.position,hero.model.position))[0];
-    if(target&&dist(target.actor.model.position,hero.model.position)<18){
-      const dx=target.actor.model.position.x-hero.model.position.x,dz=target.actor.model.position.z-hero.model.position.z;
-      const targetYaw=Math.atan2(-dx,-dz);
+    const target=selectLockTarget(enemies,hero.model.position);
+    if(target){
+      const targetYaw=targetHeading(hero.model.position,target.actor.model.position);
       const diff=Math.atan2(Math.sin(targetYaw-state.yaw),Math.cos(targetYaw-state.yaw));
       state.yaw+=diff*Math.min(dt*3,1);
     }
