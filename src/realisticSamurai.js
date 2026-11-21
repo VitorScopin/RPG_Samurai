@@ -99,11 +99,12 @@ function materialsFromGltf(gltf){
 async function prepareAsset(){
   const loader=new FBXLoader();
   const motionNames=Object.keys(ANIMATION_PATHS);
-  const [rig,motionResults,glbResult,weaponResult]=await Promise.all([
+  const [rig,motionResults,glbResult,weaponResult,scabbardResult]=await Promise.all([
     loader.loadAsync(DIRECTORY+'ronin.fbx'),
     Promise.allSettled(motionNames.map(key=>loader.loadAsync(DIRECTORY+ANIMATION_PATHS[key]))),
     new GLTFLoader().loadAsync(DIRECTORY+'materials.glb').catch(()=>null),
-    new GLTFLoader().loadAsync(DIRECTORY+'weapons/sword.glb').catch(()=>null)
+    new GLTFLoader().loadAsync(DIRECTORY+'weapons/sword.glb').catch(()=>null),
+    new GLTFLoader().loadAsync(DIRECTORY+'attachments/Scabbard.glb').catch(()=>null)
   ]);
   const bodyBones=indexRigBones(rig);
   if(!bodyBones.has('hips')||!bodyBones.has('righthand'))throw new Error('Arquivo FBX sem o esqueleto humanoide esperado.');
@@ -139,7 +140,7 @@ async function prepareAsset(){
     };
     node.material=Array.isArray(node.material)?node.material.map(convert):convert(node.material);
   });
-  return {rig,clips,weapon:weaponResult?.scene||null};
+  return {rig,clips,weapon:weaponResult?.scene||null,scabbard:scabbardResult?.scene||null};
 }
 function getAsset(){
   if(!reusable.promise)reusable.promise=prepareAsset();
@@ -177,7 +178,7 @@ function swordModel(){
   end.position.y=-.31;g.add(end);
   return g;
 }
-function authoredSword(source){
+function authoredSword(source,targetLength=1.42){
   if(!source)return null;
   const g=source.clone(true);
   g.name='KatanaImportedGLB';
@@ -203,7 +204,7 @@ function authoredSword(source){
   bounds.setFromObject(align);
   const height=bounds.max.y-bounds.min.y;
   if(!Number.isFinite(height)||height<1e-4)return null;
-  align.scale.setScalar(1.42/height);
+  align.scale.setScalar(targetLength/height);
   align.updateMatrixWorld(true);
   const scaledBounds=new THREE.Box3().setFromObject(align);
   const center=scaledBounds.getCenter(new THREE.Vector3());
@@ -229,6 +230,23 @@ function mountSword(rig,bones,rootScale,asset,role){
   mount.add(imported||swordModel());
   mount.userData.source=imported?'authored-glb':'procedural-fallback';
   hand.add(mount);
+}
+function mountScabbard(bones,asset,role){
+  if(role!=='hero'||!asset.scabbard)return;
+  const hip=bones.get('hips');
+  if(!hip)return;
+  const object=authoredSword(asset.scabbard,1.25);
+  if(!object)return;
+  const mount=new THREE.Group();
+  mount.name='AuthoredScabbard';
+  hip.updateWorldMatrix(true,false);
+  const scale=hip.getWorldScale(new THREE.Vector3());
+  mount.scale.set(1/Math.max(1e-6,Math.abs(scale.x)),1/Math.max(1e-6,Math.abs(scale.y)),1/Math.max(1e-6,Math.abs(scale.z)));
+  mount.position.set(-.26,-.25,.11);
+  mount.rotation.set(.16,0,Math.PI+.15);
+  object.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
+  mount.add(object);
+  hip.add(mount);
 }
 function makeRig(asset,actor,{role='hero'}={}){
   const fbx=cloneSkinned(asset.rig);
@@ -272,6 +290,7 @@ function makeRig(asset,actor,{role='hero'}={}){
     node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;
   });
   mountSword(fbx,bones,fbx.scale.x,asset,role);
+  mountScabbard(bones,asset,role);
   // Three materially distinct enemy armor/weapon meshes follow the actual
   // Mixamo bones; NPCs therefore animate instead of moving as static statues.
   if(ENEMY_ARCHETYPES[role])decorateEnemyRig(fbx,bones,role);
