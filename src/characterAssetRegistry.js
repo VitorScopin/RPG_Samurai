@@ -2,7 +2,7 @@
  * The derived artwork remains subject to original model attribution (CC BY 4.0).
  */
 const REVISION='496862cda55bfba3be6d02eec5aee3ca808a31a3';
-const BASE='https://raw.githubusercontent.com/kiarashfa/Samurai/'+REVISION+'/public/models/';
+const BASE='https://raw.githubusercontent.com/achrefelouafi/SamuraiThirdPersonTemplateThreeJS/'+REVISION+'/public/models/';
 export const MODEL_FILES=Object.freeze({
   katana:Object.freeze({
     id:'katana',
