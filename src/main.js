@@ -6,6 +6,7 @@ import { createCharacterPreviewScene, loadCharacter, DEFAULT_CHARACTER, applyCha
 import { setupCharacterCreator } from './creatorUI.js';
 import { ENEMY_ORDER,archetypeFor,decorateFallbackEnemy } from './enemyArchetypes.js';
 import { selectLockTarget, targetHeading } from './targetLock.js';
+import { FORMS, selectForm, damageMultiplier, earnSpirit, spendSpirit } from './combatForms.js';
 import './style.css';
 
 const $ = (selector) => document.querySelector(selector);
@@ -27,6 +28,7 @@ function save() {
   try{localStorage.setItem(SAVE_KEY,JSON.stringify({
     level:state.level,xp:state.xp,health:state.health,coins:state.coins,
     potions:state.potions,quest:state.quest,kills:state.kills,
+    form:state.form,spirit:state.spirit,
     slain:bandits.map(e=>e.dead),bossDead:boss.dead,
     x:hero.model.position.x,z:hero.model.position.z
   }));}catch{/* storage may be blocked */}
@@ -139,6 +141,7 @@ installRealisticSamurai([
 const state={
   started:false,paused:true,dead:false,dialogue:false,sound:true,
   level:1,xp:0,health:100,stamina:100,coins:0,potions:3,
+  form:'garca',spirit:0,attackKind:'light',
   quest:0,kills:0,attackCooldown:0,attackAnim:0,attackHitPending:false,attackHitDelay:0,
   dodgeCooldown:0,dodgeTime:0,invulnerable:0,blockTime:99,healCooldown:0,
   run:false,blocking:false,time:0,uiClock:0,saveClock:0,
@@ -264,6 +267,7 @@ function enemyDies(enemy){
   const coins=enemy.isBoss?85:enemy.config.coins;
   const gainedXP=enemy.isBoss?200:enemy.config.xp;
   state.coins+=coins;
+  state.spirit=earnSpirit(state.spirit,enemy.isBoss?45:25);
   addXP(gainedXP);
   makeSound(enemy.isBoss?110:enemy.archetype==='cursed'?118:160,.32,'sawtooth',.035);
   if(enemy.isBoss) {if(state.quest===3)advanceQuest(4);toast('O ONI FOI DERROTADO! +200 XP','gold');}
@@ -289,13 +293,30 @@ function damageEnemy(enemy,damage){
   makeSound(185,.13,'square',.025);
   if(enemy.health<=0)enemyDies(enemy);
 }
-function attack(){
+function chooseForm(index){
+  if(!state.started||state.paused||state.dialogue||state.dead)return;
+  const form=FORMS[index];
+  if(!form||state.form===form.id)return;
+  state.form=form.id;
+  makeSound(520+index*110,.11,'sine',.025);
+  toast(form.name+' · '+form.description,'gold');
+  updateHUD();
+}
+function attack(kind='light'){
   if(!state.started||state.paused||state.dialogue||state.dead||state.attackCooldown>0||state.dodgeTime>0)return;
-  if(state.stamina<16){toast('Vigor insuficiente. Aguarde a recuperação.');return;}
-  state.stamina-=16;
-  state.attackCooldown=hero.rigged?.82:.48;
-  state.attackAnim=hero.rigged?.72:.30;
-  state.attackHitDelay=hero.rigged?.24:.12;
+  const heavy=kind==='finisher';
+  const staminaCost=heavy?28:16;
+  if(state.stamina<staminaCost){toast('Vigor insuficiente. Aguarde a recuperação.');return;}
+  if(heavy){
+    const result=spendSpirit(state.spirit);
+    if(!result.available){toast('ESPÍRITO INSUFICIENTE · FAÇA APARADAS E VENÇA DUELOS');return;}
+    state.spirit=result.value;
+  }
+  state.attackKind=heavy?'finisher':'light';
+  state.stamina-=staminaCost;
+  state.attackCooldown=heavy?(hero.rigged?1.10:.78):(hero.rigged?.82:.48);
+  state.attackAnim=heavy?(hero.rigged?.93:.52):(hero.rigged?.72:.30);
+  state.attackHitDelay=heavy?(hero.rigged?.35:.23):(hero.rigged?.24:.12);
   state.attackHitPending=true;
   state.blocking=false;
   // Keep lock-on enabled through combos and aim each strike at the nearest target.
@@ -310,17 +331,20 @@ function attack(){
 }
 function performHit(){
   const p=hero.model.position;
-  effects(p.x-Math.sin(hero.model.rotation.y)*1.45,p.z-Math.cos(hero.model.rotation.y)*1.45,0xe6efff,1);
+  const finisher=state.attackKind==='finisher';
+  effects(p.x-Math.sin(hero.model.rotation.y)*1.45,p.z-Math.cos(hero.model.rotation.y)*1.45,finisher?0xf3bd74:0xe6efff,finisher?1.28:1);
   const facing=new THREE.Vector2(-Math.sin(hero.model.rotation.y),-Math.cos(hero.model.rotation.y));
   for(const enemy of enemies){
     if(enemy.dead||!enemy.actor.model.visible)continue;
     const ep=enemy.actor.model.position;
     const distance=dist(p,ep);
-    if(distance> (enemy.isBoss?3.8:3.15)||distance<.2)continue;
+    if(distance> (enemy.isBoss?3.8:3.15)+(finisher?.7:0)||distance<.2)continue;
     const toTarget=new THREE.Vector2((ep.x-p.x)/distance,(ep.z-p.z)/distance);
     if(facing.dot(toTarget)<.12)continue;
-    const dealt=Math.round(22+state.level*5+Math.random()*12);
+    const base=22+state.level*5+Math.random()*12;
+    const dealt=Math.round(base*damageMultiplier(state.form,enemy.archetype)*(finisher?2.1:1));
     damageEnemy(enemy,dealt);
+    if(finisher)state.screenShake=Math.max(state.screenShake,.13);
   }
 }
 function dodge() {
@@ -343,7 +367,7 @@ function damageHero(amount,enemy){
   const toward=new THREE.Vector2((ep.x-p.x)/(distance||1),(ep.z-p.z)/(distance||1));
   if(state.blocking&&state.stamina>=8&&facing.dot(toward)>-.2){
     state.stamina=Math.max(0,state.stamina-10);
-    if(state.blockTime<.26){enemy.stun=1.15;enemy.notice=true;makeSound(1080,.24,'triangle',.075);toast('APARADA PERFEITA!','gold');numberPopup(ep,'APARADO!',true);}
+    if(state.blockTime<.26){enemy.stun=1.15;enemy.notice=true;state.spirit=earnSpirit(state.spirit,35);makeSound(1080,.24,'triangle',.075);toast('APARADA PERFEITA! · +35 ESPÍRITO','gold');numberPopup(ep,'APARADO!',true);}
     else {makeSound(660,.14,'triangle',.03);numberPopup(p,'DEFENDIDO');}
     state.invulnerable=.2;return;
   }
@@ -378,6 +402,8 @@ function applySavedData(data) {
   state.potions=Math.max(0,Number.isFinite(Number(data.potions))?Number(data.potions):3);
   state.quest=clamp(Number(data.quest)||0,0,5);
   state.kills=clamp(Number(data.kills)||0,0,3);
+  state.form=selectForm(data.form).id;
+  state.spirit=earnSpirit(0,Number(data.spirit)||0);
   const x=Number(data.x),z=Number(data.z);
   if(Number.isFinite(x)&&Number.isFinite(z)&&!world.collides(x,z))hero.model.position.set(x,0,z);
   if(Array.isArray(data.slain)){
@@ -388,7 +414,7 @@ function applySavedData(data) {
 function initFresh(){
   try{localStorage.removeItem(SAVE_KEY);}catch{}
   hero.model.position.set(0,0,13);hero.model.rotation.y=0;
-  Object.assign(state,{level:1,xp:0,health:100,stamina:100,coins:0,potions:3,quest:0,kills:0,dead:false,attackCooldown:0,attackAnim:0,attackHitPending:false,attackHitDelay:0,invulnerable:0});
+  Object.assign(state,{level:1,xp:0,health:100,stamina:100,coins:0,potions:3,quest:0,kills:0,dead:false,form:'garca',spirit:0,attackKind:'light',attackCooldown:0,attackAnim:0,attackHitPending:false,attackHitDelay:0,invulnerable:0});
   resetEnemies();
   updateQuest();
 }
@@ -436,11 +462,13 @@ window.addEventListener('keydown',event=>{
     return;
   }
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
-  if(event.repeat && ['KeyE','KeyF','Space','KeyJ','KeyR'].includes(event.code))return;
+  if(event.repeat && ['KeyE','KeyF','Space','KeyJ','KeyK','KeyR','Digit1','Digit2','Digit3'].includes(event.code))return;
   if(event.code==='Escape'){if(state.dialogue)closeDialogue();else pauseGame();return;}
   if(!state.started||state.paused||state.dialogue)return;
   keys.add(event.code);
   if(event.code==='KeyJ')attack();
+  if(event.code==='KeyK')attack('finisher');
+  if(['Digit1','Digit2','Digit3'].includes(event.code))chooseForm(Number(event.code.slice(-1))-1);
   if(event.code==='Space')dodge();
   if(event.code==='KeyE')interact();
   if(event.code==='KeyF')heal();
@@ -479,6 +507,8 @@ document.querySelectorAll('[data-action]').forEach(btn=>{
   btn.addEventListener('pointerdown',event=>{
     event.preventDefault();
     if(type==='attack')attack();
+    if(type==='finisher')attack('finisher');
+    if(type==='form')chooseForm((FORMS.findIndex(form=>form.id===state.form)+1)%FORMS.length);
     if(type==='dodge')dodge();
     if(type==='heal')heal();
     if(type==='interact')interact();
@@ -514,6 +544,13 @@ function updateHUD(){
   $('#health-text').textContent=Math.ceil(state.health)+' / '+maxHealth();
   $('#stamina-fill').style.width=state.stamina+'%';
   $('#stamina-text').textContent=Math.round(state.stamina)+' / 100';
+  const form=selectForm(state.form);
+  $('#combat-form').textContent=form.name;
+  $('#combat-form-mark').textContent=form.mark;
+  $('#combat-form-detail').textContent=form.description;
+  $('#spirit-fill').style.width=state.spirit+'%';
+  $('#spirit-value').textContent=Math.floor(state.spirit)+'%';
+  $('#finisher-hint').classList.toggle('ready',state.spirit>=65);
   $('#level').textContent='NÍVEL '+state.level;
   $('#xp-fill').style.width=clamp(state.xp/expForLevel()*100,0,100)+'%';
   $('#coins').textContent=state.coins;
