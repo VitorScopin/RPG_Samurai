@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mountRiggedOutfit, disposeRiggedOutfit } from './rigOutfitMounts.js';
 
 /**
  * Player appearance is independent of quest progress and never modifies the
@@ -93,6 +94,7 @@ function createOrnaments(profile){
   return group;
 }
 function cleanOutfit(actor){
+  if(actor.rigOutfitParts){disposeRiggedOutfit(actor.rigOutfitParts);actor.rigOutfitParts=null;}
   if(actor.customOutfit){
     actor.model.remove(actor.customOutfit);
     actor.customOutfit.traverse(o=>{
@@ -126,7 +128,15 @@ export function applyCharacterAppearance(actor,character){
   }
   const outfit=createOrnaments(profile);
   if(!actor.rigged)outfit.scale.setScalar(1.17);
-  actor.model.add(outfit);actor.customOutfit=outfit;
+  actor.model.add(outfit);
+  if(actor.rigged){
+    const rig=actor.model.getObjectByName('DetailedSamurai');
+    if(rig){
+      actor.model.updateMatrixWorld(true);
+      actor.rigOutfitParts=mountRiggedOutfit(outfit,rig);
+    }
+  }
+  actor.customOutfit=outfit;
   actor.characterAppearance=profile;
 }
 export function createCharacterPreviewScene(){
