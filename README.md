@@ -20,6 +20,8 @@ Abra o endereço indicado pelo Vite (normalmente http://localhost:5173). Para ge
 | Caminhar | W A S D ou setas |
 | Correr | Shift |
 | Atacar | Clique esquerdo ou J |
+| Golpe de espírito | K (consome 65% de espírito) |
+| Trocar disciplina | 1, 2 ou 3 |
 | Defesa / aparar | Segurar botão direito ou Q |
 | Esquiva | Espaço |
 | Interagir | E |
@@ -30,6 +32,25 @@ Abra o endereço indicado pelo Vite (normalmente http://localhost:5173). Para ge
 | Mutar áudio | Botão no HUD |
 
 Há controles táteis em telas menores.
+
+## O Caminho da Lâmina — disciplinas originais
+
+A primeira evolução do combate traz três estilos de espada selecionáveis durante a jornada:
+
+- **1 — Passo da Garça:** ataques precisos contra shinobis ágeis.
+- **2 — Corte da Maré:** vantagem ao enfrentar lanceiros ashigaru.
+- **3 — Coração da Montanha:** golpes de força contra ronins de armadura pesada.
+
+Cada disciplina dá **35% de dano adicional apenas contra seu adversário correspondente**.
+Aparadas perfeitas acumulam **35 pontos de Espírito**, vitórias contra inimigos comuns
+concedem **25 pontos**, e derrotar o Oni concede **45**. O Espírito acumula até 100 pontos.
+Com pelo menos 65 pontos e 28 de vigor, pressione **K** para um golpe de espírito
+mais forte, com alcance levemente ampliado. O HUD mostra disciplina, especialização
+e Espírito; no celular, botões próprios alternam a disciplina e ativam o especial.
+A escolha de disciplina e o Espírito acumulado são salvos com o progresso.
+
+Esta etapa é um protótipo de combate original inspirado em jogos cinematográficos
+de samurai: não utiliza personagens, mapas, assets, nomes ou sequências do jogo de referência.
 
 ## Três inimigos animados (nova fase)
 

@@ -27,6 +27,13 @@
           <div class="stat-line"><span>VIGOR</span><div class="bar stamina"><div id="stamina-fill"></div></div><b id="stamina-text">100 / 100</b></div>
           <div class="xp-line"><span>EXPERIÊNCIA</span><div class="bar xp"><div id="xp-fill"></div></div></div>
           <div class="wallet"><span>✦ <b id="coins">0</b> MON</span><i></i><span>◈ <b id="potions">3</b> ELIXIRES</span></div>
+          <section class="martial-panel" aria-label="Disciplina de combate">
+            <div class="martial-kicker">DISCIPLINA DA LÂMINA <span>1 · 2 · 3</span></div>
+            <div class="martial-head"><span id="combat-form-mark" aria-hidden="true">鶴</span><div><strong id="combat-form">PASSO DA GARÇA</strong><small id="combat-form-detail">Precisão contra guerreiros ágeis</small></div></div>
+            <div class="spirit-label"><span>ESPÍRITO</span><b id="spirit-value">0%</b></div>
+            <div class="spirit-track"><div id="spirit-fill"></div></div>
+            <span id="finisher-hint" class="finisher-hint">K · GOLPE DE ESPÍRITO (65%)</span>
+          </section>
         </div>
         <div class="quest">
           <div class="eyebrow"><span class="quest-symbol">✧</span> MISSÃO ATUAL</div>
@@ -38,11 +45,11 @@
         <div class="minimap-shell"><div class="minimap-header"><span>◉</span> VALE DE TSUKI <b>N</b></div><canvas id="minimap" width="216" height="216"></canvas><div class="minimap-footer">TERRAS DO CLÃ HAYASHI</div></div>
         <div class="interaction" id="interaction"><span class="key">E</span><span id="interaction-text">Falar</span></div>
         <div class="enemy-label" id="enemy-label"><span id="enemy-name">SAQUEADOR</span><div class="enemy-health"><div id="enemy-health-fill"></div></div></div>
-        <div class="bottom-center"><div class="location"><span class="location-line"></span><span id="location">A ALDEIA DAS CEREJEIRAS</span><span class="location-line"></span></div><div class="controls-hint"><span>W A S D <i>MOVER</i></span><span>SHIFT <i>CORRER</i></span><span>CLIQUE <i>ATACAR</i></span><span>Q <i>DEFESA</i></span><span>ESPAÇO <i>ESQUIVA</i></span><span>E <i>INTERAGIR</i></span></div></div>
+        <div class="bottom-center"><div class="location"><span class="location-line"></span><span id="location">A ALDEIA DAS CEREJEIRAS</span><span class="location-line"></span></div><div class="controls-hint"><span>W A S D <i>MOVER</i></span><span>SHIFT <i>CORRER</i></span><span>CLIQUE <i>ATACAR</i></span><span>K <i>GOLPE ESPECIAL</i></span><span>1–3 <i>DISCIPLINA</i></span><span>Q <i>DEFESA</i></span><span>ESPAÇO <i>ESQUIVA</i></span><span>E <i>INTERAGIR</i></span></div></div>
         <div id="crosshair" class="crosshair">◇</div>
         <div id="toast" class="toast"></div>
         <div id="damage-flash"></div>
-        <div class="mobile-controls"><div class="dpad"><button data-key="KeyW" class="up">↑</button><button data-key="KeyA" class="left">←</button><button data-key="KeyS" class="down">↓</button><button data-key="KeyD" class="right">→</button></div><div class="action-pad"><button data-action="attack">⚔</button><button data-action="block">⛨</button><button data-action="dodge">↝</button><button data-action="interact">E</button><button data-action="heal">✚</button></div></div>
+        <div class="mobile-controls"><div class="dpad"><button data-key="KeyW" class="up">↑</button><button data-key="KeyA" class="left">←</button><button data-key="KeyS" class="down">↓</button><button data-key="KeyD" class="right">→</button></div><div class="action-pad"><button data-action="attack">⚔</button><button data-action="finisher" aria-label="Golpe de espírito">✦</button><button data-action="form" aria-label="Trocar disciplina">流</button><button data-action="block">⛨</button><button data-action="dodge">↝</button><button data-action="interact">E</button><button data-action="heal">✚</button></div></div>
       </div>
       <div id="dialogue" class="dialogue hidden" role="dialog" aria-modal="true"><div class="dialogue-portrait">武</div><div class="dialogue-content"><div class="eyebrow">MESTRE HIDEO</div><p id="dialogue-text"></p><button id="dialogue-next">CONTINUAR <span>↗</span></button></div></div>
       <div id="menu" class="screen menu"><div class="menu-haze"></div><div class="menu-main"><div class="seal">武士道</div><div class="menu-kicker">UMA JORNADA DE HONRA E REDENÇÃO</div><div class="japanese-title">影の道</div><h1>KAGE <em>NO</em> MICHI</h1><div class="ornament"><span></span> ❖ <span></span></div><p>O caminho das sombras começa onde a honra termina.</p><button id="start-button" class="main-button">INICIAR JORNADA <span>→</span></button><button id="new-game-button" class="secondary-button">NOVA JORNADA · CRIAR PERSONAGEM</button>
