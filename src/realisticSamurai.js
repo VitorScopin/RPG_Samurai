@@ -242,10 +242,14 @@ function mountScabbard(bones,asset,role){
   hip.updateWorldMatrix(true,false);
   const scale=hip.getWorldScale(new THREE.Vector3());
   mount.scale.set(1/Math.max(1e-6,Math.abs(scale.x)),1/Math.max(1e-6,Math.abs(scale.y)),1/Math.max(1e-6,Math.abs(scale.z)));
-  mount.position.set(-.26,-.25,.11);
-  mount.rotation.set(.16,0,Math.PI+.15);
+  // Bone translation remains in FBX centimetres. Apply metric offsets to
+  // the inverse-scaled child instead, so the scabbard really sits on the hip.
+  const holder=new THREE.Group();
+  holder.position.set(-.36,-.42,.1);
+  holder.rotation.set(.16,0,Math.PI+.15);
   object.traverse(node=>{if(node.isMesh){node.castShadow=true;node.receiveShadow=true;}});
-  mount.add(object);
+  holder.add(object);
+  mount.add(holder);
   hip.add(mount);
 }
 function makeRig(asset,actor,{role='hero'}={}){
