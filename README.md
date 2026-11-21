@@ -56,8 +56,8 @@ de samurai: não utiliza personagens, mapas, assets, nomes ou sequências do jog
 
 A integração do samurai original foi ampliada com um **asset real de arma**: uma
 katana texturizada em `GLB`, baixada automaticamente no primeiro
-`npm run assets` (~4,7 MB). A arma mantém os materiais originais e é
-dimensionada e montada no osso da mão direita. Se o download falhar,
+`npm run assets` (~4,7 MB), além de uma bainha GLB (~4,7 MB). A arma e a bainha mantêm os materiais originais e é
+dimensionada e montada no osso da mão direita; a bainha acompanha o quadril. Se o download falhar,
 permanece a versão geométrica anterior.
 
 No criador de personagem, chapéus, máscaras e componentes da armadura
