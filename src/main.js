@@ -892,6 +892,14 @@ if(import.meta.env.DEV){
       camera:{x:camera.position.x,y:camera.position.y,z:camera.position.z,up:camera.up.toArray()},
       cameraDistance:camera.position.distanceTo(hero.model.position),
       rigLoaded:hero.rigged||false,
+      authoredKatana:!!rig?.getObjectByName('KatanaImportedGLB'),
+      authoredScabbard:!!rig?.getObjectByName('AuthoredScabbard'),
+      // Useful for verifying the actual GLB path instead of only file presence.
+      weaponSource:(()=>{
+        let source=null;
+        rig?.traverse(node=>{if(node.userData?.source)source=node.userData.source;});
+        return source;
+      })(),
       rigWorldSize:size?size.toArray():null,
       skeletonHips:rig?.getObjectByName('mixamorigHips')?.position.toArray()||null,
       moveSpeed:state.lastMove,

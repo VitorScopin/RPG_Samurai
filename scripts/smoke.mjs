@@ -28,6 +28,15 @@ try{
   console.log('Character status:',status);
   console.log('Character exception:',await page.evaluate(()=>document.body.dataset.characterError||'none'));
   assert.equal(status,'ready','Realistic model and animations should load');
+  const authoredAssets=await page.evaluate(()=>window.__kageDebug?.());
+  assert(authoredAssets?.authoredKatana,'Player must render a real authored sword GLB');
+  assert.equal(authoredAssets.weaponSource,'authored-glb','Sword mount must use imported geometry');
+  assert(authoredAssets.authoredScabbard,'Player must equip the real authored scabbard GLB');
+  console.log('IMPORTED CHARACTER ASSETS',JSON.stringify({
+    sword:authoredAssets.weaponSource,
+    katana:authoredAssets.authoredKatana,
+    scabbard:authoredAssets.authoredScabbard
+  }));
   // Distinct animated 3D enemy classes must load together with the hero.
   const enemyRoster=await page.evaluate(()=>window.__kageEnemies?.());
   console.log('ENEMY ROSTER:',JSON.stringify(enemyRoster));

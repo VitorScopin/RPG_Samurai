@@ -36,3 +36,20 @@ substitui a licença CC BY do modelo de personagem nem os termos Mixamo.
 
 O carregador conserva os personagens procedurais anteriores caso o
 download de FBX / materiais / animações não possa ser realizado.
+
+## Katana texturizada — novo asset GLB
+
+- Arquivo incluído na sincronização: `public/character/weapons/sword.glb` (4.745.912 bytes).
+- Origem: https://github.com/achrefelouafi/SamuraiThirdPersonTemplateThreeJS/blob/496862cda55bfba3be6d02eec5aee3ca808a31a3/public/models/weapons/sword.glb
+- O GLB da espada foi exportado no mesmo template do corpo, e utiliza a mesma arte/material de origem. Manter os créditos do modelo **Shadowflame Samurai**, de **dark_igorek**, sob **CC BY 4.0** e do template de integração.
+- Modificações no jogo: escala automática, alinhamento do comprimento, skinning por ancoragem na mão e fallback procedural caso o arquivo falhe.
+- O arquivo é baixado durante `npm run assets`; não está embutido no repositório.
+
+Outros modelos de personagens encontrados online (Sketchfab etc.) **não** foram adicionados sem verificar rig, formato e licença. Para personagens completamente distintos, a próxima etapa exigirá modelos licenciados e testes de retargeting.
+
+## Bainha do samurai — novo asset GLB
+
+- Arquivo: `public/character/attachments/Scabbard.glb` (4.741.640 bytes).
+- Origem: https://github.com/achrefelouafi/SamuraiThirdPersonTemplateThreeJS/blob/496862cda55bfba3be6d02eec5aee3ca808a31a3/public/models/attachements/Scabbard.glb
+- Material de origem: mesmo pacote de personagem e armamento creditado acima.
+- Montagem: normalização e vínculo ao osso `Hips`, evitando que a bainha fique fixa no mundo.
