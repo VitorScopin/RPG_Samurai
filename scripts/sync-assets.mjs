@@ -17,6 +17,8 @@ const ROOT='https://raw.githubusercontent.com/achrefelouafi/SamuraiThirdPersonTe
 const OUT=path.resolve('public/character');
 const FILES=[
   ['ronin.fbx','models/tpose.fbx',21783500],
+  // Authored weapon geometry and PBR maps, from the same licensed rig source.
+  ['weapons/sword.glb','models/weapons/sword.glb',4745912],
   ['materials.glb','models/textures.glb',24499980],
   ['Idle.fbx','animations/Idle.fbx',287552],
   ['Walk.fbx','animations/Walk.fbx',200464],
@@ -31,6 +33,7 @@ const failures=[];
 for(const [name,source,expected] of FILES){
   const destination=path.join(OUT,name);
   try{if((await stat(destination)).size===expected){console.log('✓ '+name+' (em cache)');continue;}}catch{}
+  await mkdir(path.dirname(destination),{recursive:true});
   const temp=destination+'.partial';
   try{
     console.log('↓ Baixando '+name+'...');
