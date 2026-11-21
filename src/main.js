@@ -281,7 +281,8 @@ function enemyDies(enemy){
   save();
 }
 function damageEnemy(enemy,damage){
-  if(enemy.dead||enemy.stun>0.3)return;
+  // An enemy staggered by a perfect parry must remain vulnerable to a follow-up.
+  if(enemy.dead)return;
   const armor=enemy.config?.armor||0;
   const actual=Math.max(1,Math.round(damage*(1-armor)));
   enemy.health=Math.max(0,enemy.health-actual);
@@ -615,7 +616,7 @@ function updateMovement(dt){
     const heading=Number.isFinite(hero.model.rotation.y)?hero.model.rotation.y:safePose.heading;
     const deltaYaw=Math.atan2(Math.sin(targetHeading-heading),Math.cos(targetHeading-heading));
     const nextHeading=heading+deltaYaw*Math.min(dt*13,1);
-    if(Number.isFinite(nextHeading)){
+    if(Number.isFinite(nextHeading)&&!(state.locked&&state.attackHitPending)){
       // Use the Euler setter instead of accumulating onto a corrupted angle.
       hero.model.rotation.y=nextHeading;
       safePose.heading=nextHeading;
