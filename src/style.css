@@ -292,3 +292,40 @@ body[data-samurai-visual='fallback'] .model-status{color:#d7ab79}
 .enemy-label[data-kind="shinobi"] span{color:#b3e2eb}
 .enemy-label.warning .enemy-health{animation:enemyWarning .22s alternate infinite}
 @keyframes enemyWarning{from{box-shadow:0 0 0 transparent}to{box-shadow:0 0 14px #d65c4aab;}}
+
+
+/* Original cinematic sword-discipline HUD — readable across dark and bright scenes. */
+.martial-panel{position:fixed;left:42px;bottom:39px;width:292px;padding:15px 17px 13px;background:linear-gradient(130deg,#091618e8,#17221ed9);border:1px solid #ddbc865e;border-left:2px solid #e3be81;box-shadow:0 15px 36px #030a0db0,inset 0 1px #fffff011;backdrop-filter:blur(14px);pointer-events:none;text-shadow:0 2px 9px #000c;animation:martialEnter .48s ease both}
+.martial-kicker{display:flex;align-items:center;justify-content:space-between;font:700 8px "DM Sans",sans-serif;letter-spacing:.20em;color:#e2c597}
+.martial-kicker span{font-weight:500;color:#a4b4a9;letter-spacing:.08em}
+.martial-head{display:flex;align-items:center;gap:13px;margin:10px 0 11px}
+.martial-head>span{display:grid;place-items:center;flex:none;width:42px;height:42px;border:1px solid #d6b98164;color:#f1d39d;font:25px "Noto Serif JP",serif;background:#e6c68b0b}
+.martial-head strong{display:block;font:600 12px Cinzel,serif;letter-spacing:.08em;color:#f4e9d8}
+.martial-head small{display:block;margin-top:5px;color:#b5bdb2;font-size:9px;line-height:1.4}
+.spirit-label{display:flex;justify-content:space-between;align-items:center;color:#d4c4ad;font-size:9px;letter-spacing:.16em}
+.spirit-label b{color:#edcb98;font-size:10px}
+.spirit-track{height:5px;margin-top:8px;background:#070e0f;border:1px solid #c5ae8252;overflow:hidden}
+.spirit-track>div{height:100%;width:0;background:linear-gradient(90deg,#a65e41,#f2c58a);box-shadow:0 0 13px #e4a261b3;transition:width .18s linear}
+.finisher-hint{display:block;margin-top:9px;color:#adada4;font-size:8px;letter-spacing:.11em;transition:color .18s,text-shadow .18s}
+.finisher-hint.ready{color:#ffd99e;text-shadow:0 0 15px #eab565ad;animation:spiritPulse 1.4s ease-in-out infinite}
+@keyframes martialEnter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spiritPulse{50%{opacity:.65}}
+@media(max-width:1150px) and (min-width:721px){
+  .martial-panel{left:22px;bottom:23px;width:245px;padding:12px}
+  .controls-hint span{padding:7px 6px;font-size:8px;gap:4px}
+}
+@media(max-width:720px){
+  .martial-panel{position:absolute;left:10px;top:114px;bottom:auto;width:190px;padding:9px 10px}
+  .martial-kicker{font-size:7px}
+  .martial-head{gap:8px;margin:6px 0}
+  .martial-head>span{width:29px;height:30px;font-size:18px}
+  .martial-head strong{font-size:9px}
+  .martial-head small{font-size:7px;margin-top:2px}
+  .spirit-label,.spirit-label b{font-size:8px}
+  .finisher-hint{font-size:7px}
+  .action-pad{gap:5px}
+  .action-pad button{min-width:34px}
+}
+@media(max-width:720px) and (max-height:640px){
+  .martial-panel{top:84px;left:7px;width:160px}
+}
