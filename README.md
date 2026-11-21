@@ -52,6 +52,26 @@ A escolha de disciplina e o Espírito acumulado são salvos com o progresso.
 Esta etapa é um protótipo de combate original inspirado em jogos cinematográficos
 de samurai: não utiliza personagens, mapas, assets, nomes ou sequências do jogo de referência.
 
+## Upgrade de assets dos personagens — katana GLB e armadura com esqueleto
+
+A integração do samurai original foi ampliada com um **asset real de arma**: uma
+katana texturizada em `GLB`, baixada automaticamente no primeiro
+`npm run assets` (~4,7 MB). A arma mantém os materiais originais e é
+dimensionada e montada no osso da mão direita. Se o download falhar,
+permanece a versão geométrica anterior.
+
+No criador de personagem, chapéus, máscaras e componentes da armadura
+deixam de ficar presos a coordenadas fixas: agora são vinculados aos ossos
+da cabeça, ombros, tronco ou quadril do rig atual. Também foi corrigida
+a limpeza desses componentes quando se troca de preset, evitando acumular
+meshes no personagem.
+
+**Estado visual:** o corpo continua sendo o modelo texturizado e
+esqueletizado já creditado de Shadowflame Samurai. A arma é um novo GLB
+autoral do mesmo pacote. **Não foram adicionados novos corpos fotorrealistas**
+ou 3 modelos humanoides totalmente diferentes nesta etapa. Essa evolução
+exigirá novos modelos licenciados, rigs e retargeting compatíveis.
+
 ## Três inimigos animados (nova fase)
 
 A estrada agora reúne **três classes de oponentes** com armas, armaduras,
